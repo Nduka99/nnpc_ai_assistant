@@ -1,0 +1,119 @@
+[
+ {
+  "file": "bge-reranker-v2-m3-Q8_0.gguf",
+  "source": "gpustack/bge-reranker-v2-m3-GGUF",
+  "revision": "main",
+  "bytes": 635676416,
+  "sha256": "a43c7c9b11a4c1517e5bf95151960e1621d1b72f7a493364b01e386cf1aaa1d3",
+  "licence": "Apache-2.0",
+  "use": "reranker"
+ },
+ {
+  "file": "gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf",
+  "source": "unsloth/gemma-4-26B-A4B-it-GGUF",
+  "revision": "an earlier revision (today's main differs)",
+  "bytes": 17010978592,
+  "sha256": "453cf049ba87a29b9ed5739087b84b7fa0265a4f2b11eefa2c77683dec6a8020",
+  "licence": "Apache-2.0",
+  "use": "generator"
+ },
+ {
+  "file": "GLM-OCR-GGUF/GLM-OCR-f16.gguf",
+  "source": "ggml-org/GLM-OCR-GGUF",
+  "revision": "main (28 Sept 2026)",
+  "bytes": 1785771648,
+  "sha256": "b06675e983db9593db78603b06f097e48c0cf078b37731c0a09612f4a249cf6f",
+  "licence": "MIT (zai-org/GLM-OCR)",
+  "use": "table structure and words in pictures"
+ },
+ {
+  "file": "GLM-OCR-GGUF/mmproj-GLM-OCR-Q8_0.gguf",
+  "source": "ggml-org/GLM-OCR-GGUF",
+  "revision": "main (28 Sept 2026)",
+  "bytes": 484403648,
+  "sha256": "9c4b58e33e316ed142eb5dcb41abec3844d3e6e5dc361ffb782c3fa9d175141f",
+  "licence": "MIT (zai-org/GLM-OCR)",
+  "use": "table structure and words in pictures"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/config.json",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 559,
+  "sha256": "73477b47ae9a395f008f993ebd8fb5c16ce0b5e8419ffdf2f5b2183b260f9cff",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/model.safetensors",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 4544143072,
+  "sha256": "9f4f4a49f908ef0c979bce8ff5a5c0e88882dc6c5dc4304387cbbd152558e2c2",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/preprocessor_config.json",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 394,
+  "sha256": "fb2817d3523ca3b666c859f15320c7138416bc38ffc515e2963f78c868c51c90",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/special_tokens_map.json",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 636,
+  "sha256": "baec30ea10906f16adb8c18af7a34023002c1746542612b8b41c9f09e1351351",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/tokenizer.json",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 34363039,
+  "sha256": "cb9140fae3ac5122c972d37adf83e1248471a38147ad76f8215c8872c6fd8322",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/tokenizer.model",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 4241003,
+  "sha256": "61a7b147390c64585d6c3543dd6fc636906c9af3865a5548f27f31aee1d4c8e2",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "siglip2-so400m-patch14-384/tokenizer_config.json",
+  "source": "google/siglip2-so400m-patch14-384",
+  "revision": "e8e487298228002f3d8a82e0cd5c8ea9c567f57f",
+  "bytes": 47164,
+  "sha256": "14afe629fe4959b9e0d51e1852b8d9f7ad074f90a1a7125a4fcdd17f06e78fc8",
+  "licence": "Apache-2.0",
+  "use": "picture vectors"
+ },
+ {
+  "file": "Qwen3-Embedding-4B-GGUF/Qwen3-Embedding-4B-Q8_0.gguf",
+  "source": "Qwen/Qwen3-Embedding-4B-GGUF",
+  "revision": "f4602530db1d980e16da9d7d3a70294cf5c190be",
+  "bytes": 4279660224,
+  "sha256": "b60ae5ce2dd6a0b77f82cadf21def1f310a3e10cde380ad0081b07a9d416949d",
+  "licence": "Apache-2.0",
+  "use": "embeddings (CPU)"
+ },
+ {
+  "file": "NVIDIA-Nemotron-3-Nano-4B-Q8_0.gguf",
+  "source": "unsloth/NVIDIA-Nemotron-3-Nano-4B-GGUF",
+  "revision": "8e81be55c5aa3d63bb82b6ceec62d50805d9e1bb",
+  "bytes": 4233679008,
+  "sha256": "81d4c5931c42f34789267445139dbdb196073760b99e11fbc7067fa2d2d7d629",
+  "licence": "NVIDIA Open Model License",
+  "use": "grounding judge (K28)"
+ }
+]

@@ -1,0 +1,11 @@
+{
+ "note": "RSS feeds whose robots.txt allowed crawling on 10 October 2026. TheCable is left out: it refuses automated requests (HTTP 403). Only item metadata is kept.",
+ "feeds": [
+  {"name": "Punch", "url": "https://punchng.com/feed/"},
+  {"name": "Premium Times", "url": "https://www.premiumtimesng.com/feed/"},
+  {"name": "BusinessDay", "url": "https://businessday.ng/feed/"},
+  {"name": "Nairametrics", "url": "https://nairametrics.com/feed/"},
+  {"name": "ThisDay", "url": "https://www.thisdaylive.com/feed/"},
+  {"name": "Vanguard", "url": "https://www.vanguardngr.com/feed/"}
+ ]
+}

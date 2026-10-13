@@ -1,0 +1,62 @@
+# PetroKnowledge's services, run with Docker Engine (and Docker Compose).
+#
+# From the repository root, inside a Linux shell (WSL's Ubuntu on Windows):
+#
+#   docker compose -f deploy/compose.yaml --profile dev up -d
+#
+# Settings come from deploy/.env: copy deploy/.env.example and set a password. The
+# file is git-ignored. Port 5433 keeps it apart from other Postgres servers on the
+# machine. Every service has a memory limit, so the stack fits beside the model
+# servers on the laptop.
+
+name: petroknowledge
+
+services:
+  postgres:
+    profiles: [dev]
+    # pgvector plus pg_textsearch for BM25 ranking (deploy/postgres/Dockerfile).
+    build: postgres
+    image: petroknowledge-postgres:0.8.6-pg18-trixie-textsearch1.4.0
+    command:
+      - postgres
+      - -c
+      - shared_preload_libraries=pg_textsearch
+      # BM25 index memory, kept inside the container's 512 MB (the default is 2 GB).
+      - -c
+      - pg_textsearch.memory_limit=128MB
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      # This machine only. WSL forwards it to Windows localhost; the network never sees it.
+      - "127.0.0.1:5433:5432"
+    volumes:
+      # Postgres 18 images keep their data under /var/lib/postgresql/18/docker.
+      - pgdata:/var/lib/postgresql
+    mem_limit: 512m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  migrate:
+    profiles: [dev]
+    image: ghcr.io/amacneil/dbmate:2.36.0
+    command: ["up"]
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable
+      # A schema dump needs pg_dump of the server's major version and a mismatch fails
+      # silently; the migrations themselves are the schema history.
+      DBMATE_NO_DUMP_SCHEMA: "true"
+    volumes:
+      - ../db:/db:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    mem_limit: 64m
+
+volumes:
+  pgdata:

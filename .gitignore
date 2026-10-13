@@ -1,0 +1,15 @@
+# Local files and runtime artifacts (private planning files are excluded in
+# .git/info/exclude, which never ships)
+.env
+.venv/
+# Collected corpus, index inputs and runs: never published (K02)
+data/
+artifacts/
+models/
+tools/
+__pycache__/
+.coverage
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+%SystemDrive%/

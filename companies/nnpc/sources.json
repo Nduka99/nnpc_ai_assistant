@@ -1,0 +1,120 @@
+{
+ "id": "nnpc",
+ "name": "NNPC Limited",
+ "aliases": [
+  "NNPC",
+  "NNPCL",
+  "NNPC Ltd",
+  "Nigerian National Petroleum Company"
+ ],
+ "terms": "nnpcgroup.com terms of use: content may not be copied by storing on disk or placing on another site without NNPC's written permission. Kept as a private research copy only and never published. Wikipedia text: CC BY-SA 4.0. NUPRC regulations: public law instruments; reuse terms not stated.",
+ "allowed_hosts": [
+  "nnpcgroup.com",
+  "en.wikipedia.org",
+  "nuprc.gov.ng",
+  "eia.gov"
+ ],
+ "own_hosts": [
+  "nnpcgroup.com"
+ ],
+ "max_file_mb": 120,
+ "units_page": {
+  "url": "https://nnpcgroup.com/businesses",
+  "section": "Our Businesses"
+ },
+ "core_sitemaps": [
+  "https://nnpcgroup.com/__sitemap__/pages.xml"
+ ],
+ "post_sitemaps": [
+  "https://nnpcgroup.com/__sitemap__/posts.xml"
+ ],
+ "core_urls": [
+  {
+   "url": "https://cms1977.nnpcgroup.com/uploads/2024_Annual_Report_669bbd1ef7.pdf",
+   "kind": "document"
+  },
+  {
+   "url": "https://cms1977.nnpcgroup.com/uploads/NNPC_2025_ANNUAL_REPORT_FINAL_7c7d85f29d.pdf",
+   "kind": "document"
+  },
+  {
+   "url": "https://cms1977.nnpcgroup.com/uploads/NNPC_CONSOLIDATED_AND_SEPARATE_FINANCIAL_STATEMENTS_AS_AT_31_ST_DECEMBER_2022_71c17fb1bb.pdf",
+   "kind": "document"
+  },
+  {
+   "url": "https://cms1977.nnpcgroup.com/uploads/NNPCL_FINANCIAL_STATEMENTS_FOR_THE_YEAR_ENDED_AT_DECEMBER_2023_ff9ff543f9.pdf",
+   "kind": "document"
+  },
+  {
+   "url": "https://cms1977.nnpcgroup.com/uploads/LIST_OF_THE_NNPC_LIMITED_B_Us_and_S_Us_604b6ef090.pdf",
+   "kind": "document"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/NNPC",
+   "kind": "page",
+   "licence": "CC BY-SA 4.0"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Port_Harcourt_Refining_Company",
+   "kind": "page",
+   "licence": "CC BY-SA 4.0"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Ajaokuta%E2%80%93Kaduna%E2%80%93Kano_Natural_Gas_Pipeline",
+   "kind": "page",
+   "licence": "CC BY-SA 4.0"
+  },
+  {
+   "url": "https://en.wikipedia.org/wiki/Petroleum_Industry_Act_2021",
+   "kind": "page",
+   "licence": "CC BY-SA 4.0"
+  },
+  {
+   "url": "https://retail.nnpcgroup.com/web/guest/home",
+   "kind": "page"
+  },
+  {
+   "url": "https://retail.nnpcgroup.com/web/guest/about-ppmc",
+   "kind": "page"
+  },
+  {
+   "url": "https://retail.nnpcgroup.com/web/guest/guidelines",
+   "kind": "page"
+  },
+  {
+   "url": "https://retail.nnpcgroup.com/web/guest/faq",
+   "kind": "page"
+  },
+  {
+   "url": "https://careers.nnpcgroup.com/",
+   "kind": "page"
+  },
+  {
+   "url": "https://careers.nnpcgroup.com/eligibility",
+   "kind": "page"
+  },
+  {
+   "url": "https://careers.nnpcgroup.com/faq",
+   "kind": "page"
+  },
+  {
+   "url": "https://careers.nnpcgroup.com/how-to",
+   "kind": "page"
+  },
+  {
+   "url": "https://careers.nnpcgroup.com/journey",
+   "kind": "page"
+  },
+  {
+   "url": "https://www.nuprc.gov.ng/laws/regulations/gazetted",
+   "kind": "page",
+   "licence": "Federal regulator publication; reuse terms not stated"
+  },
+  {
+   "url": "https://www.eia.gov/international/content/analysis/countries_long/Nigeria/Nigeria-2025.pdf",
+   "kind": "document",
+   "licence": "US government work, public domain"
+  }
+ ],
+ "link_sitemaps": []
+}

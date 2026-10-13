@@ -1,0 +1,39 @@
+{
+ "note": "Reading rules per host: main content selector, furniture to remove, elements serving as headings, headings whose sections are not content, and whether forms hold the content (forms_hold_content: a portal wraps each page in a form), the media server that relative upload URLs in a page's Nuxt data refer to (media_base; NNPC's runtime config names it mediaURL). Hosts without rules are read from <main> or <body> with standard furniture removed. A subdomain with its own site has its own entry: it would otherwise take its parent's rules.",
+ "hosts": {
+  "nnpcgroup.com": {
+   "main": ".template-body",
+   "furniture": ".nav-bar, a.button, .btn-download",
+   "headings": ".section-heading",
+   "stop_headings": [
+    "Other Posts"
+   ],
+   "media_base": "https://nnpc-web-cms.nnpcgroup.com"
+  },
+  "en.wikipedia.org": {
+   "main": "#mw-content-text .mw-parser-output",
+   "furniture": ".mw-editsection, .navbox, .vertical-navbox, .sidebar, .reflist, .references, sup.reference, .catlinks, .toc, #toc, .ambox, .hatnote, .noprint, .metadata, .mw-jump-link, .printfooter, .sistersitebox, .shortdescription, .mw-empty-elt, .geo-nondefault",
+   "stop_headings": [
+    "See also",
+    "References",
+    "Notes",
+    "Citations",
+    "External links",
+    "Further reading",
+    "Bibliography",
+    "Sources"
+   ]
+  },
+  "retail.nnpcgroup.com": {
+   "main": "#main-content",
+   "furniture": ".portlet-msg-alert, .portlet-msg-error, #loadstatus, a.btn",
+   "forms_hold_content": true
+  },
+  "careers.nnpcgroup.com": {
+   "furniture": "div.fixed, body > div > div:last-child"
+  },
+  "nuprc.gov.ng": {
+   "furniture": "a[href$='.pdf']"
+  }
+ }
+}

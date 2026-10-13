@@ -1,0 +1,8 @@
+.nuxt
+.output
+coverage
+playwright-report
+test-results
+package-lock.json
+openapi.json
+dist

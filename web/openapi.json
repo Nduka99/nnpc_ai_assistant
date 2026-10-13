@@ -1,0 +1,528 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "PetroKnowledge",
+  "version": "0.1.0"
+ },
+ "paths": {
+  "/api/v1/answers": {
+   "post": {
+    "summary": "Create Answer",
+    "description": "Answer from the served Postgres index, in turn, and record it for audit.",
+    "operationId": "create_answer_api_v1_answers_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnswerRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RecordedAnswer"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/answers/stream": {
+   "post": {
+    "summary": "Stream Answer",
+    "description": "The same answer as server-sent events: `queued` with its place in line if it\nmust wait, `stage` as each stage starts, then `answer` once it is verified, or\n`error`. Unverified text is never sent. A reader who leaves while waiting gives\nthe place back.",
+    "operationId": "stream_answer_api_v1_answers_stream_post",
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/AnswerRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "text/event-stream": {
+        "itemSchema": {
+         "type": "object",
+         "properties": {
+          "data": {
+           "type": "string"
+          },
+          "event": {
+           "type": "string"
+          },
+          "id": {
+           "type": "string"
+          },
+          "retry": {
+           "type": "integer",
+           "minimum": 0
+          }
+         }
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/api/v1/answers/{answer_id}/feedback": {
+   "post": {
+    "summary": "Give Feedback",
+    "description": "Keep a reader's judgement of an answer, from its own conversation (K28).",
+    "operationId": "give_feedback_api_v1_answers__answer_id__feedback_post",
+    "parameters": [
+     {
+      "name": "answer_id",
+      "in": "path",
+      "required": true,
+      "schema": {
+       "type": "integer",
+       "title": "Answer Id"
+      }
+     }
+    ],
+    "requestBody": {
+     "required": true,
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/FeedbackRequest"
+       }
+      }
+     }
+    },
+    "responses": {
+     "204": {
+      "description": "Successful Response"
+     },
+     "422": {
+      "description": "Validation Error",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/HTTPValidationError"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/healthz": {
+   "get": {
+    "summary": "Healthz",
+    "description": "Liveness: the process answers HTTP. It checks nothing else, so a slow model\nor database never gets a working process restarted.",
+    "operationId": "healthz_healthz_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": {
+          "type": "string"
+         },
+         "type": "object",
+         "title": "Response Healthz Healthz Get"
+        }
+       }
+      }
+     }
+    }
+   }
+  },
+  "/readyz": {
+   "get": {
+    "summary": "Readyz",
+    "description": "Readiness: whether an answer can be served now. HTTP 503 until the database\nhas a matching index to serve and every model server has loaded its model.",
+    "operationId": "readyz_readyz_get",
+    "responses": {
+     "200": {
+      "description": "Successful Response",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/Readiness"
+        }
+       }
+      }
+     }
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "AnswerRequest": {
+    "properties": {
+     "question": {
+      "type": "string",
+      "maxLength": 1000,
+      "minLength": 1,
+      "title": "Question"
+     },
+     "conversation_id": {
+      "anyOf": [
+       {
+        "type": "string",
+        "format": "uuid"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Conversation Id"
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "question"
+    ],
+    "title": "AnswerRequest",
+    "description": "A question for the v1 API, checked after surrounding spaces are removed, and\nthe conversation it continues, if any. Any other field is refused."
+   },
+   "AnswerView": {
+    "properties": {
+     "question": {
+      "type": "string",
+      "title": "Question"
+     },
+     "status": {
+      "type": "string",
+      "title": "Status"
+     },
+     "notice": {
+      "type": "string",
+      "title": "Notice"
+     },
+     "claims": {
+      "items": {
+       "$ref": "#/components/schemas/ClaimView"
+      },
+      "type": "array",
+      "title": "Claims"
+     },
+     "sources": {
+      "items": {
+       "$ref": "#/components/schemas/Source"
+      },
+      "type": "array",
+      "title": "Sources"
+     },
+     "closest_pages": {
+      "items": {
+       "$ref": "#/components/schemas/Page"
+      },
+      "type": "array",
+      "title": "Closest Pages"
+     },
+     "pointers": {
+      "items": {
+       "$ref": "#/components/schemas/Pointer"
+      },
+      "type": "array",
+      "title": "Pointers"
+     }
+    },
+    "type": "object",
+    "required": [
+     "question",
+     "status",
+     "notice",
+     "claims",
+     "sources",
+     "closest_pages",
+     "pointers"
+    ],
+    "title": "AnswerView"
+   },
+   "ClaimView": {
+    "properties": {
+     "text": {
+      "type": "string",
+      "title": "Text"
+     },
+     "sources": {
+      "items": {
+       "type": "integer"
+      },
+      "type": "array",
+      "title": "Sources"
+     }
+    },
+    "type": "object",
+    "required": [
+     "text",
+     "sources"
+    ],
+    "title": "ClaimView"
+   },
+   "FeedbackRequest": {
+    "properties": {
+     "conversation_id": {
+      "type": "string",
+      "format": "uuid",
+      "title": "Conversation Id"
+     },
+     "helpful": {
+      "type": "boolean",
+      "title": "Helpful"
+     },
+     "comment": {
+      "type": "string",
+      "maxLength": 1000,
+      "title": "Comment",
+      "default": ""
+     }
+    },
+    "additionalProperties": false,
+    "type": "object",
+    "required": [
+     "conversation_id",
+     "helpful"
+    ],
+    "title": "FeedbackRequest",
+    "description": "A reader's judgement of one answer, from the conversation it belongs to."
+   },
+   "HTTPValidationError": {
+    "properties": {
+     "detail": {
+      "items": {
+       "$ref": "#/components/schemas/ValidationError"
+      },
+      "type": "array",
+      "title": "Detail"
+     }
+    },
+    "type": "object",
+    "title": "HTTPValidationError"
+   },
+   "Page": {
+    "properties": {
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "url": {
+      "type": "string",
+      "title": "Url"
+     }
+    },
+    "type": "object",
+    "required": [
+     "title",
+     "url"
+    ],
+    "title": "Page"
+   },
+   "Pointer": {
+    "properties": {
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "link": {
+      "type": "string",
+      "title": "Link"
+     },
+     "kind": {
+      "type": "string",
+      "title": "Kind"
+     }
+    },
+    "type": "object",
+    "required": [
+     "title",
+     "link",
+     "kind"
+    ],
+    "title": "Pointer",
+    "description": "A page search found whose words cannot be quoted: opened, never quoted."
+   },
+   "Readiness": {
+    "properties": {
+     "ready": {
+      "type": "boolean",
+      "title": "Ready"
+     },
+     "checks": {
+      "additionalProperties": {
+       "type": "boolean"
+      },
+      "type": "object",
+      "title": "Checks"
+     }
+    },
+    "type": "object",
+    "required": [
+     "ready",
+     "checks"
+    ],
+    "title": "Readiness"
+   },
+   "RecordedAnswer": {
+    "properties": {
+     "id": {
+      "type": "integer",
+      "title": "Id"
+     },
+     "conversation_id": {
+      "type": "string",
+      "title": "Conversation Id"
+     },
+     "turn": {
+      "type": "integer",
+      "title": "Turn"
+     },
+     "understood_as": {
+      "items": {
+       "type": "string"
+      },
+      "type": "array",
+      "title": "Understood As"
+     },
+     "answer": {
+      "$ref": "#/components/schemas/AnswerView"
+     }
+    },
+    "type": "object",
+    "required": [
+     "id",
+     "conversation_id",
+     "turn",
+     "understood_as",
+     "answer"
+    ],
+    "title": "RecordedAnswer"
+   },
+   "Source": {
+    "properties": {
+     "number": {
+      "type": "integer",
+      "title": "Number"
+     },
+     "title": {
+      "type": "string",
+      "title": "Title"
+     },
+     "heading": {
+      "type": "string",
+      "title": "Heading"
+     },
+     "quote": {
+      "type": "string",
+      "title": "Quote"
+     },
+     "link": {
+      "type": "string",
+      "title": "Link"
+     },
+     "url": {
+      "type": "string",
+      "title": "Url"
+     },
+     "published": {
+      "type": "string",
+      "title": "Published"
+     },
+     "captured": {
+      "type": "string",
+      "title": "Captured"
+     },
+     "compiled": {
+      "type": "boolean",
+      "title": "Compiled"
+     }
+    },
+    "type": "object",
+    "required": [
+     "number",
+     "title",
+     "heading",
+     "quote",
+     "link",
+     "url",
+     "published",
+     "captured",
+     "compiled"
+    ],
+    "title": "Source",
+    "description": "One verified quote, numbered so claims can point to it."
+   },
+   "ValidationError": {
+    "properties": {
+     "loc": {
+      "items": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "integer"
+        }
+       ]
+      },
+      "type": "array",
+      "title": "Location"
+     },
+     "msg": {
+      "type": "string",
+      "title": "Message"
+     },
+     "type": {
+      "type": "string",
+      "title": "Error Type"
+     },
+     "input": {
+      "title": "Input"
+     },
+     "ctx": {
+      "type": "object",
+      "title": "Context"
+     }
+    },
+    "type": "object",
+    "required": [
+     "loc",
+     "msg",
+     "type"
+    ],
+    "title": "ValidationError"
+   }
+  }
+ }
+}

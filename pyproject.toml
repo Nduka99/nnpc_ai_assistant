@@ -1,0 +1,91 @@
+[project]
+name = "petroknowledge"
+version = "0.1.0"
+description = "An independent evidence assistant over public oil and gas company information, with a checked source for every claim."
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "Nduka Nwagbo" }]
+requires-python = ">=3.12"
+dependencies = [
+    "beautifulsoup4>=4.15.0",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "opentelemetry-exporter-otlp-proto-http>=1.45.0",
+    "opentelemetry-instrumentation-fastapi>=0.66b0",
+    "opentelemetry-sdk>=1.45.0",
+    "psycopg[binary]>=3.3.6",
+    "uvicorn>=0.52.4",
+]
+
+[project.scripts]
+petroknowledge = "petroknowledge.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.12,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+strict = true
+
+# pylatexenc, pypdfium2, openpyxl and xlrd ship no type information.
+[[tool.mypy.overrides]]
+module = ["pylatexenc.*", "pypdfium2.*", "openpyxl.*", "xlrd.*"]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "--cov=petroknowledge --cov=evaluation --cov-report=term-missing --cov-fail-under=100 -m 'not live'"
+markers = ["live: needs the running model servers and a built index"]
+
+[dependency-groups]
+dev = [
+    # FastAPI's test client (Starlette) needs httpx2; the application uses httpx.
+    "httpx2>=2.12.0",
+    "mypy>=2.3.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.7",
+]
+# Reading documents (the API never installs it): Docling reads PDFs on the CPU. The
+# version floors are the Lime Green assistant's, where each was measured.
+ingest = [
+    "docling-slim[convert-core,feat-chunking,format-docx,format-pdf-docling,models-local]>=2.130.0",
+    # The table model needs OpenCV; the headless build has no GUI libraries.
+    "docling-ibm-models[opencv-python-headless]>=4.0.3",
+    # 7.22.1 reads a glyph a subset font puts on code 32 instead of a word break
+    # (docling-parse #359).
+    "docling-parse>=7.22.1",
+    # Page images come from pdfium: docling-parse's Windows renderer corrupts memory
+    # when its threads exit (docling-parse #357). The range is Docling's own.
+    "pypdfium2>=5.13.0,<6.0.0",
+    # Listed directly so the CPU index below applies (uv sources cover direct
+    # dependencies only).
+    "torch>=2.14.0",
+    "torchvision>=0.29.0",
+    "pylatexenc>=2.11",
+    # Spreadsheets NNPC publishes (production, liftings, gas data): .xlsx and the
+    # older .xls format.
+    "openpyxl>=3.1",
+    "xlrd>=2.0",
+]
+# Reader gates: web pages are drawn by headless Chromium (K16, X42's method). The floor
+# is the Lime Green assistant's.
+evaluation = [
+    "playwright>=1.63.0",
+]
+
+# CPU builds of PyTorch on every platform: reading runs on the CPU, and the default
+# Linux wheels would add gigabytes of CUDA libraries.
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+torchvision = [{ index = "pytorch-cpu" }]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

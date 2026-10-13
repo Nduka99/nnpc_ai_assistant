@@ -1,0 +1,828 @@
+/* PetroKnowledge's thread (Lime Green's stylesheet). A neutral blue accent and system
+   type in light and dark, with no company's colours or logo (ADR 0001); every text
+   colour meets WCAG 2.2 AA on the surface it sits on (body and labels at least
+   4.5:1). */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #eef2f7;
+  --text: #172033;
+  --muted: #4f5b6e;
+  --line: #d5dce6;
+  --line-strong: #7d8a9c;
+  --accent: #1d5fa8;
+  --accent-strong: #174c86;
+  --accent-soft: #e4eefa;
+  --on-accent: #ffffff;
+  --link: #1a5596;
+  --danger: #b42318;
+  --danger-soft: #fdecea;
+  --danger-line: #f3b8b2;
+  --radius: 12px;
+  /* Quotes are the documents' own words, so they are set in a reading face. */
+  --serif: "Iowan Old Style", "Palatino Linotype", Charter, Georgia, serif;
+  font:
+    100%/1.55 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0f141b;
+    --surface: #151b24;
+    --surface-2: #1c2430;
+    --text: #e6ebf2;
+    --muted: #9eaabb;
+    --line: #2c3746;
+    --line-strong: #64758b;
+    --accent: #7cb4f2;
+    --accent-strong: #a3cbf7;
+    --accent-soft: #1b2a3d;
+    --on-accent: #0b1a2c;
+    --link: #a3cbf7;
+    --danger: #f97066;
+    --danger-soft: #3a1714;
+    --danger-line: #6e2a24;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  scrollbar-color: var(--line-strong) transparent;
+  /* Focused or scrolled-to elements stay clear of the sticky question box. */
+  scroll-padding-top: 1rem;
+  scroll-padding-bottom: calc(var(--composer-height, 8rem) + 1rem);
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+::selection {
+  background: var(--accent-soft);
+  color: var(--text);
+}
+
+a {
+  color: var(--link);
+  text-underline-offset: 0.15em;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.icon {
+  width: 1.1em;
+  height: 1.1em;
+  flex: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Layout: one reading column; the question box stays at the bottom of the view. */
+
+.shell {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 0 1rem;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+}
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  padding: 1.5rem 0 1rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.5625rem;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+/* The title block gives way before the button wraps under it. */
+.header > div {
+  flex: 1 1 18rem;
+}
+
+.tagline {
+  max-width: 62ch;
+  margin: 0.25rem 0 0;
+  text-wrap: pretty;
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+
+.tagline strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.thread {
+  display: flex;
+  flex-direction: column;
+  gap: 2.75rem;
+  padding: 1.75rem 0 2rem;
+}
+
+.composer-bar {
+  position: sticky;
+  bottom: 0;
+  padding: 0.75rem 0;
+  background: var(--bg);
+  border-top: 1px solid var(--line);
+}
+
+.notice-footer p {
+  max-width: 72ch;
+  margin: 0 auto;
+  padding: 0.25rem 0 1.25rem;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  text-wrap: pretty;
+}
+
+/* Controls */
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.8rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.button:hover {
+  background: var(--surface-2);
+}
+
+.button-primary {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.button-primary:hover {
+  border-color: var(--accent-strong);
+  background: var(--accent-strong);
+}
+
+.composer {
+  padding: 0.625rem 0.625rem 0.5rem 0.875rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 14px;
+  background: var(--surface);
+  transition:
+    border-color 150ms ease-out,
+    box-shadow 150ms ease-out;
+}
+
+.composer:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.composer textarea {
+  display: block;
+  width: 100%;
+  min-height: 3.1rem;
+  max-height: 12rem;
+  field-sizing: content;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  caret-color: var(--accent);
+  font: inherit;
+  resize: none;
+  outline: none;
+}
+
+.composer textarea::placeholder {
+  color: var(--muted);
+}
+
+.composer-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.375rem;
+}
+
+.composer-row .button {
+  margin-left: auto;
+}
+
+.hint,
+.count {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+/* The empty thread teaches the input. */
+
+.undo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.empty h2 {
+  margin: 0 0 0.5rem;
+  font-size: 1.25rem;
+  font-weight: 650;
+}
+
+.empty p {
+  max-width: 62ch;
+  text-wrap: pretty;
+  margin: 0 0 1.25rem;
+  color: var(--muted);
+}
+
+.examples {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.example {
+  width: 100%;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background-color 150ms ease-out,
+    border-color 150ms ease-out;
+}
+
+.example:hover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+/* A turn: the question, then its progress or its outcome. */
+
+.turn {
+  display: grid;
+  gap: 0.875rem;
+  scroll-margin-top: 1rem;
+}
+
+.turn + .turn {
+  padding-top: 2.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.question {
+  max-width: 68ch;
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  line-height: 1.35;
+  text-wrap: balance;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.progress {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.stages {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.125rem;
+  margin: 0;
+  padding: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  list-style: none;
+}
+
+.stage {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.stage-mark {
+  display: grid;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  transition:
+    background-color 200ms ease-out,
+    border-color 200ms ease-out;
+}
+
+.stage-mark .icon {
+  width: 0.7rem;
+  height: 0.7rem;
+}
+
+.stage-current {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.stage-current .stage-mark {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 30%, transparent);
+  animation: working 1.2s ease-in-out infinite alternate;
+}
+
+.stage-done .stage-mark {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.stage-status {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.stage-expect {
+  display: block;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+/* An answer */
+
+/* The one authored moment: an outcome settles in. */
+.answer,
+.referral {
+  animation: arrive 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.answer {
+  display: grid;
+  gap: 1rem;
+}
+
+.answer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.copied {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.understood {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.understood-label {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.claims {
+  display: grid;
+  gap: 0.625rem;
+  max-width: 68ch;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.claims li {
+  font-size: 1.0625rem;
+  font-weight: 500;
+  line-height: 1.6;
+}
+
+/* A claim's citation chips stay together on one line. */
+.refs {
+  white-space: nowrap;
+}
+
+.ref {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.5rem;
+  height: 1.5rem;
+  padding: 0 0.25rem;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--surface-2);
+  color: var(--link);
+  font-size: 0.75rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+/* A source's own number is a label, not a control: plain, unlike the chips. */
+.source-number {
+  padding-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.ref {
+  margin-left: 0.3rem;
+  vertical-align: 0.1em;
+  text-decoration: none;
+}
+
+.ref:hover {
+  background: var(--accent-soft);
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 0.9375rem;
+}
+
+/* Fixed texts keep a reading measure, however wide the column. */
+.notice p,
+.notice ul {
+  max-width: 68ch;
+}
+
+.notice p,
+.notice ul {
+  margin: 0.3rem 0;
+}
+
+.notice ul {
+  padding-left: 1.25rem;
+}
+
+.section-heading {
+  margin: 0 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 650;
+}
+
+.sources ol {
+  display: grid;
+  gap: 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* Unverified pages sit below the verified sources in weight too. */
+.pages ul {
+  display: grid;
+  gap: 0.375rem;
+  max-width: 68ch;
+  margin: 0;
+  padding-left: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.answer-notice {
+  max-width: 68ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.pages-note {
+  max-width: 68ch;
+  margin: 0 0 0.5rem;
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.pointer-place {
+  color: var(--muted);
+}
+
+.sources li {
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  /* Room for the quote's hanging opening mark between the number and the words. */
+  gap: 1rem;
+  margin: -0.375rem;
+  padding: 0.375rem;
+  border-radius: 10px;
+  scroll-margin: 1rem;
+  transition: background-color 300ms ease-out;
+}
+
+.sources li:target {
+  background: var(--accent-soft);
+}
+
+.source-body {
+  min-width: 0;
+}
+
+.quote {
+  position: relative;
+  max-width: 68ch;
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+/* A hanging opening mark: these are the source's words, not the assistant's. */
+.quote::before {
+  content: "\201C";
+  position: absolute;
+  left: -0.55em;
+  color: var(--accent);
+}
+
+/* A quote with its own opening mark hangs that mark instead. */
+.quote-marked {
+  text-indent: -0.45em;
+}
+
+.quote-marked::before {
+  content: none;
+}
+
+.source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.875rem;
+  margin: 0.375rem 0 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.verified {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--link);
+  font-weight: 600;
+}
+
+.source-title {
+  margin: 0.125rem 0 0;
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
+.source-title a .icon {
+  width: 0.9em;
+  height: 0.9em;
+  margin-left: 0.25rem;
+  vertical-align: -0.1em;
+}
+
+.source-heading {
+  color: var(--muted);
+}
+
+/* An advice referral: fixed text, set apart as information, not as an alarm. */
+
+.referral {
+  padding: 1rem 1.125rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.referral-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+}
+
+.referral-heading .icon {
+  width: 1.3em;
+  height: 1.3em;
+  color: var(--accent);
+}
+
+.referral .notice {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.problem {
+  display: grid;
+  justify-items: start;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+}
+
+.problem p {
+  margin: 0;
+}
+
+.problem-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+/* A failure is the one place for the danger colours. */
+.problem-error {
+  border-color: var(--danger-line);
+  background: var(--danger-soft);
+}
+
+.problem-error .problem-title .icon {
+  width: 1.2em;
+  height: 1.2em;
+  color: var(--danger);
+}
+
+@keyframes arrive {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes working {
+  to {
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Touch screens: the main controls get a 44 px target (Fitts's law). */
+@media (pointer: coarse) {
+  .button {
+    min-height: 2.75rem;
+  }
+}
+
+@media (max-width: 30rem) {
+  .header {
+    flex-direction: column;
+  }
+
+  .header > div {
+    flex: none;
+  }
+
+  .hint {
+    display: none;
+  }
+}
+
+@media (max-height: 30rem) {
+  html {
+    scroll-padding-bottom: 1rem;
+  }
+
+  .composer-bar {
+    position: static;
+  }
+}
+
+/* Feedback on an answer (K28): quiet, below the answer, never competing with it. */
+
+.feedback {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+}
+
+.feedback-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.feedback-question {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.feedback-form {
+  display: grid;
+  gap: 0.375rem;
+  max-width: 68ch;
+  margin-top: 0.625rem;
+  justify-items: start;
+}
+
+.feedback-label {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.feedback-form textarea {
+  width: 100%;
+  padding: 0.5rem 0.625rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  background: var(--surface);
+  color: var(--text);
+  caret-color: var(--accent);
+  font: inherit;
+  resize: vertical;
+}
+
+.feedback-form textarea:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.feedback-done,
+.feedback-failed {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 0.875rem;
+}
+
+.feedback-done {
+  color: var(--muted);
+}
+
+.feedback-done:focus {
+  outline: none;
+}
+
+.feedback-failed {
+  color: var(--danger);
+}
