@@ -102,6 +102,19 @@
     "visual-truth.json": "55bbf43f01a53aa36ce1fbeda31450605a146ea00661e2304fc7438d62234bba"
    }
   },
+  "nnpc-manager-v1": {
+   "description": "Senior NNPC manager demo development menu: 28 cases and four three-turn conversations; 30 answered, six unsupported, four advice referrals.",
+   "files": {
+    "absence-audit.json": "a41106c274cf0653836a2f1535832d5c40b4ff5d71a4c5b0da059423f758fef9",
+    "audit.json": "0b4578c0d8c891bb2a2ef59b5f37813910e6cf7c7d02fa3a9e93b53595c3a1b3",
+    "cases.json": "1d733d86791b5d561becfb315ae8ba3f694ec1ab9e79ccfc92c0553d01bdba8d",
+    "completion-validation.json": "f43e3c57629924576bb9efac012a244a7c81c2991c6214ac0d07ebe823795a47",
+    "conversations.json": "6ef3784d9a3a4d3a43f346bf4ca42ec93f2e987f0eeb179dae388ad96d021599",
+    "date-audit.json": "c295d18e8b54c5365fccb82b591d7bb8f23434af9180b73da5f80a5794f56f7e",
+    "rules.md": "9ffcc32f1b192dbbbc43119248bc1d5ff03c08b8e07efdc1d5412b4b2f8a4519",
+    "validation.json": "280442a4e20cfcd66771b442589d85858bc7dba82cc4cd122439d3894fa74e19"
+   }
+  },
   "nnpc-scope-v1": {
    "description": "",
    "files": {

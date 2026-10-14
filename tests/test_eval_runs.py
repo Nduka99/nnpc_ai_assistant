@@ -90,6 +90,7 @@ def test_evidence_is_reached_by_its_quote_in_its_file_or_its_page_pointed_to() -
     other_file = {**FILES, "https://acme.test/gas": B}
 
     assert runs.reached(evidence("runs 614 km"), entry, FILES)
+    assert runs.reached(evidence("line – runs 614 km"), entry, FILES)  # folded
     assert not runs.reached(evidence("runs 614 km"), entry, other_file)
     assert not runs.reached(evidence("runs 615 km"), entry, FILES)
     assert runs.reached(evidence("anything", "scan", B, 7), entry, FILES)

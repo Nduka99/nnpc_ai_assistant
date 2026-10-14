@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from petroknowledge import assistant, config, llm, siglip, store
+from petroknowledge import assistant, config, llm, siglip, store, units
 from petroknowledge.answer import HISTORY_PROMPT, PROMPT_SHA256, REFERRAL
 from petroknowledge.records import Passage
 
@@ -106,8 +106,11 @@ def served(
 
 
 def test_an_answer_comes_from_the_live_index_and_is_recorded(
-    served: Chat, pg: store.Connection
+    served: Chat, pg: store.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    # Every claim judged, so the record holds each kind of model request (K32's
+    # default judges only claims stating a figure, and this one states none).
+    monkeypatch.setattr(config, "GROUNDING", "remove")
     result, answer_id = assistant.ask_and_record("How long to commission the plant?")
 
     assert result.status == "answered"
@@ -339,7 +342,7 @@ def test_the_units_a_question_names_scope_a_second_search(
     models = assistant.answer_models()
 
     found = assistant.asked_units(pg, version, "Where does APL run?", [])
-    assert found == [pipes | {"id": unit_ids[0]}]
+    assert found == [pipes | {"aliases": "", "id": unit_ids[0]}]
     earlier = [("Where does APL run?", "Along the coast.")]
     assert assistant.asked_units(pg, version, "and its valves?", earlier) == found
     assert assistant.asked_units(pg, version, "Who runs Acme?", []) == []
@@ -385,6 +388,38 @@ def test_the_roles_a_question_asks_about_come_with_their_latest_statement(
     assert lookup("What does gas cost?") == ("", [])
     assistant.ask_and_record("Who is the plant manager?")
     assert "Who holds the roles asked about" in served.requests[1][1]
+
+
+def test_the_structure_is_told_when_the_words_or_passages_touch_it(
+    served: Chat, pg: store.Connection
+) -> None:
+    live = store.live_version(pg)
+    assert live is not None
+    assert assistant.structure_lookup(pg, live[0]) is None  # no structure yet
+    compiled = row(f"{units.COMPILED}\nUpstream, 1 unit: Acme Pipelines.",
+                   heading=units.COMPILED)  # fmt: skip
+    rows = [*ROWS, compiled]
+    manifest = {"corpus_sha256": "c", "passages_sha256": "q",
+                "embedding_model": config.EMBEDDING_MODEL}  # fmt: skip
+    version = store.write_version(pg, DOCUMENTS, rows, embed([r["text"] for r in rows]),
+                                  manifest, {"c" * 64: b"png"},
+                                  {"c" * 64: [1.0] + [0.0] * 1151})  # fmt: skip
+    pipes = {"name": "Acme Pipelines", "acronym": "APL", "url": SITE + "pipes"}
+    (pipes_id,) = store.write_units(pg, version, [pipes], [])
+    store.write_structure(pg, version, [("Upstream", "Acme Pipelines", pipes_id),
+                                        ("Downstream", "Acme Retail", None),
+                                        ("Gas", "Acme Gas", None)])  # fmt: skip
+    pg.commit()
+    lookup = assistant.structure_lookup(pg, version)
+    assert lookup is not None
+
+    passages = lookup("How do Upstream and Downstream differ?", [])
+
+    assert [p.heading for p in passages] == [units.COMPILED]
+    assert lookup("Is APL part of Upstream?", []) == passages  # a group and a unit
+    assert lookup("How long does commissioning take?", []) == []
+    listing = Passage(1, SITE, "Old", "Areas", "Upstream, Downstream and Gas", "2026")
+    assert lookup("How long?", [listing]) == passages  # an older grouping retrieved
 
 
 def test_feedback_goes_to_the_answer_in_its_conversation(served: Chat) -> None:

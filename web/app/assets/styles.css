@@ -311,6 +311,99 @@ a {
   background: var(--accent-soft);
 }
 
+/* How to ask (K33): opens over the conversation as part of the question bar, which
+   stays in view, so the guide can be read beside the question being written. Being
+   in the bar's flow, its height counts in the page's bottom scroll padding, so
+   keyboard focus in the conversation never lands behind it (WCAG 2.4.11). */
+
+.guide {
+  /* The whole bar must fit the screen, or the guide's top could not be reached
+     while the bar is stuck to the bottom: the screen less the question box. */
+  max-height: max(12rem, min(30rem, calc(100dvh - 13rem)));
+  margin-bottom: 0.75rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 1rem 1.25rem 1.25rem;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  animation: arrive 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.guide-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.375rem;
+}
+
+.guide-head h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 650;
+}
+
+.guide-lead {
+  max-width: 62ch;
+  margin: 0 0 0.875rem;
+  color: var(--muted);
+  text-wrap: pretty;
+}
+
+.guide-rules {
+  display: grid;
+  gap: 0.625rem;
+  max-width: 68ch;
+  margin: 0 0 1.25rem;
+  padding-left: 1.1rem;
+  color: var(--muted);
+}
+
+.guide-rules strong {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.guide-subhead {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  font-weight: 650;
+}
+
+.guide-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0.2rem 0.45rem;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--link);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 150ms ease-out;
+}
+
+.guide-toggle:hover,
+.guide-toggle[aria-expanded="true"] {
+  background: var(--accent-soft);
+}
+
+/* A refusal's next step: the guide, one click away. */
+.next-step {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0;
+  color: var(--muted);
+}
+
 /* A turn: the question, then its progress or its outcome. */
 
 .turn {

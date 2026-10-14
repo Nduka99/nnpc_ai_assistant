@@ -5,8 +5,10 @@ import LineIcon from "./LineIcon.vue";
 // The question box: Enter asks, Shift+Enter starts a new line. It stays ready for
 // typing while an answer is on its way; only asking waits, and the button then
 // stops the answer instead (Nielsen 3, user control).
-const props = defineProps<{ busy: boolean }>();
-const emit = defineEmits<{ ask: [question: string]; stop: [] }>();
+// It also holds the How to ask toggle (K33), so the guide can be reopened from
+// wherever the reader is in a long conversation.
+const props = defineProps<{ busy: boolean; guideOpen: boolean }>();
+const emit = defineEmits<{ ask: [question: string]; stop: []; guide: [] }>();
 
 // The API's limit (`config.MAX_QUESTION_CHARS`); the count shows near it.
 const MAX_QUESTION_CHARS = 1000;
@@ -14,6 +16,7 @@ const SHOW_COUNT_FROM = 900;
 
 const text = ref("");
 const input = ref<HTMLTextAreaElement | null>(null);
+const guideButton = ref<HTMLButtonElement | null>(null);
 const question = computed(() => text.value.trim());
 const canAsk = computed(
   () =>
@@ -46,7 +49,10 @@ function onKeydown(event: KeyboardEvent): void {
   }
 }
 
-defineExpose({ focus: () => input.value?.focus() });
+defineExpose({
+  focus: () => input.value?.focus(),
+  focusGuide: () => guideButton.value?.focus(),
+});
 </script>
 
 <template>
@@ -62,6 +68,17 @@ defineExpose({ focus: () => input.value?.focus() });
       @keydown="onKeydown"
     />
     <div class="composer-row">
+      <button
+        ref="guideButton"
+        type="button"
+        class="guide-toggle"
+        aria-controls="asking-guide"
+        :aria-expanded="guideOpen"
+        @click="emit('guide')"
+      >
+        <LineIcon name="guide" />
+        How to ask
+      </button>
       <span v-if="text.length >= SHOW_COUNT_FROM" class="count">
         {{ text.length }} / {{ MAX_QUESTION_CHARS }}
       </span>

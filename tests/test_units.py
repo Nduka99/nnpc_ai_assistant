@@ -64,6 +64,20 @@ def test_a_text_names_a_unit_by_acronym_or_short_name_as_whole_words() -> None:
     assert named("Who heads Acme Ltd?") == []  # the parent is not a unit
 
 
+def test_a_unit_is_named_by_a_former_name_its_own_page_gives() -> None:
+    page = ("Acme E&P Limited (AEPL), formerly the Acme Petroleum Development "
+            "Company (APDC), produces oil. Acme Oil, formerly Zeta Oil (ZO), is a "
+            "partner. AEPL was formerly part of Acme Holdings.")  # fmt: skip
+
+    aliases = units.former_names(page, UNITS[1])
+    named = units.naming([UNITS[1] | {"aliases": "; ".join(aliases)}])
+
+    # Zeta Oil is another company's old name; "formerly part of" is no name.
+    assert aliases == ["Acme Petroleum Development Company", "APDC"]
+    assert named("Does APDC list stimulation?") == [0]
+    assert named("Acme Petroleum Development wells") == [0]
+
+
 def test_a_follow_up_takes_the_units_of_the_latest_message_naming_one() -> None:
     named = units.naming(UNITS)
     history = [("What does AGML do?", "It markets gas."),
@@ -130,6 +144,15 @@ def test_a_units_list_is_grouped_by_the_lines_that_lead_its_entries() -> None:
         "Non-Energy, 1 unit: Acme Foundation Limited/Gte.",
         "Non-Energy: To build value.",
     ])  # fmt: skip
+
+
+def test_a_text_names_groups_by_their_names_as_whole_words() -> None:
+    groups = units.grouped(GROUPED_HTML, GROUPED_ELEMENTS, "Our Businesses")
+    names = [group["name"] for group in groups]
+
+    assert units.structure_named("Is upstream bigger than non-energy?", names) == 2
+    assert units.structure_named("Upstreaming crude", names) == 0  # whole words
+    assert units.structure_named("Any text at all", [""]) == 0  # a nameless group
 
 
 def test_a_list_without_group_lines_is_one_group_named_by_its_section() -> None:

@@ -39,12 +39,19 @@ from petroknowledge.records import (
     Passage,
     Rejection,
 )
-from petroknowledge.verify import verify
+from petroknowledge.verify import states_figure, verify
 
 Retrieve = Callable[[str], list[Passage]]
 # The roles a question's words ask about (K24): the line telling the answer request
 # who holds them, and the passages of their statements, oldest first.
 RoleLookup = Callable[[str], tuple[str, list[Passage]]]
+# The company's current structure (K30 G3): (the user's words, the passages found) →
+# the compiled passage the answer request is pointed to, or none when the question
+# touches no structure.
+StructureLookup = Callable[[str, Sequence[Passage]], list[Passage]]
+# Why a claim names an earlier holder of a role it names, given the whole answer's
+# text (K30 G4); "" when it does not.
+StaleCheck = Callable[[str, str], str]
 # What a search adds after the company's passages: (query, its top places) → added.
 Extra = Callable[[str, Sequence[Passage]], list[Passage]]
 Chat = Callable[[str, str, dict[str, Any]], object]  # system, user, schema → JSON
@@ -58,7 +65,11 @@ INSUFFICIENT = (
 # Shown, with the parts listed, when a part of the question has no verified claim:
 # the reader sees exactly what is not answered (Lime Green E5 stage E).
 UNANSWERED_PARTS = "Nothing verified was found for these parts of the question:"
-CHECK_THE_SOURCES = "The pages listed below may say more; please check them directly."
+# The next step for a missing part (K33): its pages, or the part asked on its own.
+CHECK_THE_SOURCES = (
+    "The pages listed below may say more; check them, or ask about that part on its "
+    "own."
+)
 # Shown when every part has a verified claim but another claim failed verification.
 PARTIAL = (
     "Only statements verified against the indexed public information are shown, and "
@@ -72,7 +83,10 @@ REFERRAL = (
     "- For an investment decision, consult a licensed financial adviser.\n"
     "- For a legal question, consult a qualified lawyer.\n"
     "- In a safety emergency, follow your site's emergency procedure and call 112, "
-    "Nigeria's toll-free national emergency number."
+    "Nigeria's toll-free national emergency number.\n"
+    # A factual question that only mentions a decision may be referred too (K33): the
+    # reader is told how to get the fact.
+    "If you only wanted what NNPC's documents say, ask for that fact on its own."
 )
 
 # The first request asks whether the question asks for advice. Questions about what
@@ -173,8 +187,11 @@ its quotes. Do not repeat numbers from the question, and do not write dates the 
 quotes do not hold: each source's date is shown with it.
 4. A claim may name a law, regulation, licence, permit or approval (such as the \
 Petroleum Industry Act or a NUPRC regulation) only if its quotes do.
-5. If passages disagree, write a separate claim for each source saying what that \
-source states. Do not pick one.
+5. Each passage says what kind of source it is and when it was written. If passages \
+disagree because one is older, or is a third party's account of the company, state \
+what the most recent company source says; give an older or third-party version only \
+as what that source said. If company sources of the same date disagree, write a \
+separate claim for each saying what that source states.
 6. Write claims as statements of what the sources say. Do not address the reader as \
 "you", and do not give investment, legal or safety advice.
 7. Never state a price per unit, such as per litre or per barrel.
@@ -199,6 +216,25 @@ ROLES_TO_ANSWER = (
     "Who holds the roles asked about, by the latest dated statement found (the dates "
     "were compared for you; an earlier holder is history, never current):\n{roles}\n"
     "A claim about who holds one of these roles now must name its latest holder."
+)
+
+# The company's current structure (K30 G3), from its own units page through the graph,
+# told to the answer request only when the question touches its structure; no dates,
+# as K24's line has none.
+# The structure is pointed to, not restated (K31): restated as one list, it came back
+# as one packed claim the number check removed, and widened answers about a subset.
+STRUCTURE_TO_ANSWER = (
+    "Passage {source} is the company's current business structure, compiled by code "
+    "from its own units page (the sources were compared for you). Any other grouping "
+    "of the company's businesses in the passages comes from an older or third-party "
+    "source: give it only as what that source said."
+)
+# One re-draft when the checks leave a drafted part without a claim (K31): the checks'
+# own reasons go back to the model, and every new claim is checked again.
+REPAIR_REQUEST = (
+    "Your earlier claims below were removed by the checks, for the reasons given:\n"
+    "{removed}\nWrite claims again for parts {parts} only, from the same passages, "
+    "following every rule. Leave a part out if the passages do not support it."
 )
 
 # The grounding check (K28): each verified claim is judged against the whole passages
@@ -227,9 +263,32 @@ PROMPTS = (
     + UNITS_TO_SEARCH
     + UNITS_TO_ANSWER
     + ROLES_TO_ANSWER
+    + STRUCTURE_TO_ANSWER
+    + REPAIR_REQUEST
     + GROUND_PROMPT
 )
 PROMPT_SHA256 = hashlib.sha256(PROMPTS.encode()).hexdigest()
+
+
+def order_date(passage: Passage) -> str:
+    """The date a passage's source is ordered by: its publication date, else its
+    file's date, else the day it was captured. It is compared, never shown."""
+    return passage.published or passage.file_date or passage.fetched_at[:10]
+
+
+def source_kind(passage: Passage, newest: str) -> tuple[str, str]:
+    """What kind of source a passage comes from, whether it is the most recent of the
+    company sources given (`newest`) or older, and its publication date if it has
+    one (K29 F1, K30 G5). Code compares the dates, so the model never has to guess
+    which source is current (CONFLICTS, arXiv 2506.08500); a file's or capture's date
+    is never shown, since a date given to the model is copied into claims (K24)."""
+    if passage.channel == "guidance":
+        return "third party", passage.published
+    kind = "company document" if passage.page is not None else "company page"
+    if passage.published:
+        kind = "company post"
+    recency = "most recent" if order_date(passage) >= newest else "older"
+    return f"{kind}, {recency}", passage.published
 
 
 def user_prompt(
@@ -237,22 +296,30 @@ def user_prompt(
     sources: Mapping[str, Passage],
     units: str = "",
     roles: str = "",
+    structure: str = "",
 ) -> str:
-    """The passages, delimited as reference data with their dates, then the units the
-    user's words name if any (`UNITS_TO_ANSWER`), then who holds the roles asked
-    about if any (`ROLES_TO_ANSWER`), then the cleaned question and its numbered
-    parts."""
+    """The passages, delimited as reference data with what kind of source each is
+    (`source_kind`), then the units the user's words name if any (`UNITS_TO_ANSWER`),
+    then who holds the roles asked about if any (`ROLES_TO_ANSWER`), then the
+    company's current structure if the question touches it (`STRUCTURE_TO_ANSWER`),
+    then the cleaned question and its numbered parts."""
+    company = [order_date(p) for p in sources.values() if p.channel != "guidance"]
+    newest = max(company, default="")
     blocks = []
     for source_id, passage in sources.items():
-        date = f' date="{passage.published}"' if passage.published else ""
+        kind, published = source_kind(passage, newest)
+        date = f' date="{published}"' if published else ""
         blocks.append(
             f'<passage id="{source_id}" source="{passage.title}" '
-            f'section="{passage.heading}"{date}>\n{passage.text}\n</passage>'
+            f'section="{passage.heading}" kind="{kind}"{date}>\n'
+            f"{passage.text}\n</passage>"
         )
     numbered = "\n".join(f"{number}. {part}" for number, part in enumerate(parts, 1))
     named = f"\n\n{UNITS_TO_ANSWER.format(units=units)}" if units else ""
     if roles:
         named += f"\n\n{ROLES_TO_ANSWER.format(roles=roles)}"
+    if structure:
+        named += f"\n\n{STRUCTURE_TO_ANSWER.format(source=structure)}"
     return (
         "Reference passages:\n"
         + "\n\n".join(blocks)
@@ -595,17 +662,43 @@ def grounded(
     claims: Sequence[Claim], sources: Mapping[str, Passage], chat: Chat
 ) -> tuple[tuple[Claim, ...], tuple[Rejection, ...]]:
     """The claims their cited passages support, judged one by one, and the others as
-    removed (K28). A reply that is not a verdict of support removes the claim."""
+    removed (K28). A reply that is not a verdict of support removes the claim, unless
+    the check only records its verdicts (`config.GROUNDING`, an evaluation run). With
+    "figures", only claims stating a figure are judged (K32): the judge catches a
+    substituted figure, but removed correct names, roles and dated statements for the
+    source-recency wording code itself asks for."""
     kept: list[Claim] = []
     removed: list[Rejection] = []
     for claim in claims:
+        if config.GROUNDING == "figures" and not states_figure(claim.text):
+            kept.append(claim)
+            continue
         evidence = cited_passages(claim, sources)
         user = f"Evidence:\n{evidence}\n\nStatement:\n{claim.text}"
         reply = chat(GROUND_PROMPT, user, GROUND_SCHEMA)
-        if isinstance(reply, dict) and reply.get("verdict") == "supported":
+        supported = isinstance(reply, dict) and reply.get("verdict") == "supported"
+        if supported or config.GROUNDING == "record":
             kept.append(claim)
         else:
             removed.append(Rejection(claim.text, UNGROUNDED))
+    return tuple(kept), tuple(removed)
+
+
+def current(
+    claims: Sequence[Claim], stale: StaleCheck
+) -> tuple[tuple[Claim, ...], tuple[Rejection, ...]]:
+    """The claims that name no earlier holder of a role in place of its latest one,
+    and the others as removed with the reason (K30 G4). An answer that names the
+    latest holder elsewhere may name an earlier one as history."""
+    whole = " ".join(claim.text for claim in claims)
+    kept: list[Claim] = []
+    removed: list[Rejection] = []
+    for claim in claims:
+        reason = stale(claim.text, whole)
+        if reason:
+            removed.append(Rejection(claim.text, reason))
+        else:
+            kept.append(claim)
     return tuple(kept), tuple(removed)
 
 
@@ -619,13 +712,17 @@ def answer(
     asked: Sequence[units.Unit] = (),
     roles: RoleLookup | None = None,
     judge: Chat | None = None,
+    structure: StructureLookup | None = None,
+    stale: StaleCheck | None = None,
 ) -> Answer:
     """Answer one question from the indexed information (`extra`, `scoped`: see
     `gather`). `history` is the conversation so far: only the first request reads
     it. `asked` are the units the user's words name (`understand_for`; the answer
     request is told them too, K23 B3). `roles` looks up who holds the roles the
     question's words ask about (K24). `judge` checks each verified claim (K28);
-    without one, `chat` does."""
+    without one, `chat` does. `structure` gives the company's current structure when
+    the question touches it, and `stale` removes claims naming an earlier holder of a
+    role (K30)."""
     advice, understood = understand_for(question, chat, history, asked)
     if advice:
         # Fixed text only: no retrieval, and nothing the model writes is shown.
@@ -633,24 +730,95 @@ def answer(
     parts = [part.question for part in understood]
     role_line, dated = roles(" ".join([question, *parts])) if roles else ("", [])
     given, pointers = find_passages(understood, retrieve, extra, scoped, dated)
+    compiled = structure(question, given) if structure is not None else []
+    seen = {passage.id for passage in given}
+    given = (*given, *(p for p in compiled if p.id not in seen))
     sources = {f"S{number}": passage for number, passage in enumerate(given, 1)}
-    claims: tuple[Claim, ...] = ()
-    rejected: tuple[Rejection, ...] = ()
-    if sources:
-        user = user_prompt(parts, sources, units.described(asked), role_line)
-        output = chat(ANSWER_PROMPT, user, answer_schema(list(sources), len(parts)))
-        drafts = read_output(output, list(sources), len(parts))
-        claims, rejected = verify(drafts, sources)
-        claims, ungrounded = grounded(claims, sources, judge or chat)
-        rejected = (*rejected, *ungrounded)
+    if not sources:
+        return checked(question, parts, given, pointers, (), judge or chat, stale)
+    pointed = next((s for s, p in sources.items() if compiled and p == compiled[0]), "")
+    user = user_prompt(parts, sources, units.described(asked), role_line, pointed)
+    schema = answer_schema(list(sources), len(parts))
+    drafts = read_output(chat(ANSWER_PROMPT, user, schema), list(sources), len(parts))
+    first = checked(question, parts, given, pointers, drafts, judge or chat, stale)
+    again = repair_parts(drafts, first.claims)
+    if not again:
+        return first
+    output = chat(ANSWER_PROMPT, repair_request(user, first.rejected, again), schema)
+    redrafts = [d for d in read_output(output, list(sources), len(parts))
+                if d.part in again]  # fmt: skip
+    second = checked(question, parts, given, pointers, redrafts, judge or chat, stale)
+    return joined(first, second)
+
+
+def repair_parts(drafts: Sequence[DraftClaim], claims: Sequence[Claim]) -> list[int]:
+    """The parts a repair request re-drafts (K31): parts the model drafted a claim for
+    and no claim survived the checks for. A part the model left out is never asked
+    again, so a refusal of an absent fact stays a refusal."""
+    answered = {claim.part for claim in claims}
+    return sorted({draft.part for draft in drafts} - answered)
+
+
+def repair_request(
+    user: str, rejected: Sequence[Rejection], parts: Sequence[int]
+) -> str:
+    """The answer request again, with the removed claims, each with the checks'
+    reason, and the parts to re-draft."""
+    removed = "\n".join(f'- "{r.text}": {r.reason}' for r in rejected)
+    numbers = ", ".join(str(part) for part in parts)
+    return f"{user}\n\n{REPAIR_REQUEST.format(removed=removed, parts=numbers)}"
+
+
+def joined(first: Answer, second: Answer) -> Answer:
+    """One answer of a first draft's checked claims and a repair's, with every
+    removal of both."""
+    return assembled(first.question, first.understood, first.passages, first.pointers,
+                     (*first.claims, *second.claims),
+                     (*first.rejected, *second.rejected))  # fmt: skip
+
+
+def checked(
+    question: str,
+    parts: Sequence[str],
+    given: Sequence[Passage],
+    pointers: Sequence[Passage],
+    drafts: Sequence[DraftClaim],
+    judge: Chat,
+    stale: StaleCheck | None = None,
+) -> Answer:
+    """The answer the checks leave of a reply's drafts: verification (`verify`), the
+    grounding check (`grounded`), then the earlier-holder check (`current`). The
+    answer path and offline rescoring (`evaluation rescore`, K31) share it, so a
+    change to a check can be measured on recorded replies."""
+    sources = {f"S{number}": passage for number, passage in enumerate(given, 1)}
+    claims, rejected = verify(drafts, sources)
+    claims, ungrounded = grounded(claims, sources, judge)
+    rejected = (*rejected, *ungrounded)
+    if stale is not None:
+        claims, outdated = current(claims, stale)
+        rejected = (*rejected, *outdated)
+    return assembled(question, parts, given, pointers, claims, rejected)
+
+
+def assembled(
+    question: str,
+    parts: Sequence[str],
+    given: Sequence[Passage],
+    pointers: Sequence[Passage],
+    claims: Sequence[Claim],
+    rejected: Sequence[Rejection],
+) -> Answer:
+    """The answer of the claims shown: a refusal without any; else answered, with
+    the caution its parts checklist and removals call for."""
     if not claims:
-        return Answer(question, "insufficient_evidence", INSUFFICIENT, (), given,
-                      rejected, tuple(parts), pointers)  # fmt: skip
+        return Answer(question, "insufficient_evidence", INSUFFICIENT, (),
+                      tuple(given), tuple(rejected), tuple(parts),
+                      tuple(pointers))  # fmt: skip
     # The parts checklist: the caution is decided by code, not by the model's own
     # account of how much it answered.
     notice = caution(parts, claims, rejected)
-    return Answer(question, "answered", notice, claims, given, rejected, tuple(parts),
-                  pointers)  # fmt: skip
+    return Answer(question, "answered", notice, tuple(claims), tuple(given),
+                  tuple(rejected), tuple(parts), tuple(pointers))  # fmt: skip
 
 
 def caution(

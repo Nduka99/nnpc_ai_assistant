@@ -12,6 +12,7 @@ const props = defineProps<{ turn: TurnState }>();
 const emit = defineEmits<{
   newConversation: [];
   retry: [key: number, question: string];
+  guide: [];
 }>();
 
 const STAGE_LABELS: Record<Stage, string> = {
@@ -71,7 +72,7 @@ const progress = computed(() =>
       </p>
     </div>
     <template v-else-if="turn.outcome.kind === 'answer'">
-      <AnswerBody :recorded="turn.outcome.recorded" />
+      <AnswerBody :recorded="turn.outcome.recorded" @guide="emit('guide')" />
       <AnswerFeedback
         :answer-id="turn.outcome.recorded.id"
         :conversation-id="turn.outcome.recorded.conversation_id"

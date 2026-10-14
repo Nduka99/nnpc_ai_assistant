@@ -21,6 +21,7 @@ from collections.abc import Callable, Mapping, Sequence
 from typing import Any
 
 from petroknowledge.records import Answer, Passage
+from petroknowledge.units import fold
 from petroknowledge.verify import find_quote
 from petroknowledge.view import view
 
@@ -96,14 +97,21 @@ def run(
 def reached(evidence: Mapping[str, Any], entry: Mapping[str, Any],
             files: Mapping[str, str]) -> bool:  # fmt: skip
     """Whether one evidence item reached the answer: its quote in a given passage of
-    its file, or, for a scanned page or a picture, its page pointed to. `files` gives
-    each address's file (SHA-256)."""
+    its file, also with punctuation and spacing folded (K29 instrument amendment: a
+    compiled list writes "(NGIC); NNPC Gas" where the page's text, as the key quotes
+    it, has "(NGIC) NNPC Gas"), or, for a scanned page or a picture, its page pointed
+    to. `files` gives each address's file (SHA-256)."""
 
     def same_file(found: Mapping[str, Any]) -> bool:
         return bool(files.get(found["url"]) == evidence["sha256"])
 
+    folded = fold(evidence["quote"])
     for passage in entry["given"]:
-        if same_file(passage) and find_quote(evidence["quote"], passage["text"]):
+        if not same_file(passage):
+            continue
+        if find_quote(evidence["quote"], passage["text"]):
+            return True
+        if folded and folded in fold(passage["text"]):
             return True
     if evidence["form"] not in SEARCH_ONLY:
         return False

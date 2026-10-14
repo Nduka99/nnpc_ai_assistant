@@ -203,3 +203,116 @@ def test_a_nameless_organisation_is_the_site_s_own_and_variants_count_once() -> 
     assert [found[p]["current"]["person"] for p in named("Who is the CFO?")] == [
         "Ed Ani"
     ]
+
+
+UNITS = [
+    {"name": "Acme Gas Investment Services", "acronym": "AGIS",
+     "url": "https://acme.test/agis"},
+    {"name": "Acme Trading Limited", "acronym": "ATL",
+     "url": "https://acme.test/trading"},
+    {"name": "Acme Health Organisation", "acronym": "AHO",
+     "url": "https://acme.test/aho"},
+    {"name": "Research and Innovation", "acronym": "RAI",
+     "url": "https://acme.test/rai"},
+]  # fmt: skip
+
+
+def on_page(statement: dict[str, Any], url: str) -> dict[str, Any]:
+    return statement | {"url": url}
+
+
+def test_each_statement_is_resolved_to_the_entity_it_is_about() -> None:
+    said = [
+        # One officer, the unit spelled three ways.
+        stated("Ben Eze", "Chief Gas Investment Officer", "AGIS", "2024-03-01", 1),
+        stated("Ada Obi", "Chief Gas Investment Officer, Acme Gas Investment Services",
+               "Acme Gas Investment Services (AGIS)", "2026-10-10", 2),
+        stated("Fe Ibe", "Chief Gas Investment Officer", "", "2025-02-02", 3),
+        # A unit named only in the title: it leaves the title.
+        stated("Cy Ude", "Managing Director, Acme Trading Ltd", "Acme Ltd",
+               "2026-01-05", 4),
+        # On a unit's own page: nameless, or the company itself (a unit's team read
+        # as the parent's).
+        on_page(stated("Di Ola", "Company Secretary", "", "2026-10-10", 5),
+                "https://acme.test/aho"),
+        on_page(stated("Ed Ani", "Managing Director", "Acme Ltd", "2026-10-10", 6),
+                "https://acme.test/aho"),
+        # A company office heading a unit: the company's other pages hold it.
+        on_page(stated("Gu Oko", "Chief Innovation Officer", "Acme Ltd",
+                       "2026-10-10", 7), "https://acme.test/rai"),
+        stated("Ha Uka", "Chief Innovation Officer", "Acme Ltd", "2023-08-10", 8),
+        stated("Ij Ama", "Chief Innovation Officer", "RAI", "2023-11-23", 9),
+        stated("Jo Eke", "Chief Executive Officer", "Beta Ltd", "2025-01-01", 10),
+        stated("Ko Ani", "Group Chief Executive Officer", "Acme Ltd", "2026-09-29", 11),
+    ]  # fmt: skip
+
+    resolved = roles.resolve(said, UNITS)
+
+    agis = "Acme Gas Investment Services (AGIS)"
+    aho = "Acme Health Organisation (AHO)"
+    assert [s["organisation"] for s in resolved] == [
+        agis, agis, agis, "Acme Trading Limited (ATL)", aho, aho, "Acme Ltd",
+        "Acme Ltd", "Acme Ltd", "Beta Ltd", "Acme Ltd",
+    ]  # fmt: skip
+    assert [s["role"] for s in resolved[:4]] == [
+        "Chief Gas Investment Officer", "chief gas investment officer",
+        "Chief Gas Investment Officer", "managing director",
+    ]  # fmt: skip
+    found = {(r["key"], r["organisation_key"]): r for r in roles.latest(resolved)}
+    officer = found[("chief gas investment officer", "acme gas investment services")]
+    assert officer["current"]["person"] == "Ada Obi"
+    assert [s["person"] for s in officer["earlier"]] == ["Fe Ibe", "Ben Eze"]
+    innovation = found[("chief innovation officer", "acme")]
+    assert innovation["current"]["person"] == "Gu Oko"
+    assert [s["person"] for s in innovation["earlier"]] == ["Ij Ama", "Ha Uka"]
+    assert roles.without_unit("AGIS", UNITS[0]) == "AGIS"  # only the unit: kept
+
+
+def test_an_organisation_its_passage_does_not_name_is_left_out() -> None:
+    filler = stated("Ada Obi", "Minister of State", "not specified", "2026-01-01", 1)
+    kept = stated("Ada Obi", "Director", "Acme Ltd", "2026-01-01", 1)
+
+    assert roles.as_named(filler, "Ada Obi, Minister of State, spoke.")[
+        "organisation"
+    ] == ""  # fmt: skip
+    assert roles.as_named(kept, "Ada Obi, Director at ACME, spoke.") is kept
+    nameless = roles.latest([roles.as_named(filler, "Ada Obi spoke.")])
+    assert "Minister of State (the company): Ada Obi" in roles.described(nameless)
+
+
+def test_an_acting_holder_holds_the_role_and_names_may_change_order() -> None:
+    acting = stated("Ada Obi", "Ag. Chief Upstream Investment Officer", "Acme",
+                    "2026-10-10", 1)  # fmt: skip
+
+    assert roles.role_key(acting, {}) == "chief upstream investment officer"
+    assert roles.role_key(acting | {"role": "Acting"}, {}) == "acting"
+    assert roles.same_person("Audu Ibrahim", "Ibrahim Audu")
+
+
+def test_a_claim_naming_an_earlier_holder_in_place_of_the_latest_goes() -> None:
+    stale = "Ben Eze is the Executive Vice President, Downstream."
+
+    assert roles.earlier_holder(stale, LATEST) == (
+        "names an earlier holder of Executive Vice President Downstream "
+        "(Acme Limited); the latest statement names Ada Obi"
+    )
+    succeeded = "Ada Obi succeeded Ben Eze as Executive Vice President, Downstream."
+    assert roles.earlier_holder(succeeded, LATEST) == ""
+    # The latest holder named elsewhere in the answer: the earlier one is history.
+    whole = f"Ada Obi is the Executive Vice President, Downstream. {stale}"
+    assert roles.earlier_holder(stale, LATEST, whole) == ""
+    assert roles.earlier_holder("Ben Eze spoke at the plant.", LATEST) == ""
+    # Another organisation's role counts only where the claim names it.
+    assert roles.earlier_holder("Cy Ude is the Chief Innovation Officer.", LATEST) == ""
+    assert roles.earlier_holder(
+        "Cy Ude is the Chief Innovation Officer of RAI.", LATEST
+    ).startswith("names an earlier holder of Chief Innovation Officer")
+    chair = roles.latest(
+        [
+            stated("Mo Kye", "Chairman", "Acme Ltd", "2024-01-01", 1),
+            stated("Ada Obi", "Chairman", "Acme Ltd", "2026-01-01", 2),
+        ]
+    )
+    assert roles.earlier_holder("Mo Kye is the Chairman.", chair) == ""  # one word
+    assert roles.names_person("Ada Obi spoke", "Ada Obi")
+    assert not roles.names_person("Ada spoke", "Ada Obi")

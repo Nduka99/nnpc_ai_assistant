@@ -24,6 +24,8 @@ from petroknowledge.answer import (
     History,
     Retrieve,
     RoleLookup,
+    StaleCheck,
+    StructureLookup,
     answer,
     with_extras,
 )
@@ -238,12 +240,54 @@ def scoped_retriever(
     return retrieve
 
 
+def current_roles(conn: store.Connection, version_id: int) -> list[dict[str, Any]]:
+    """A version's roles, each with its latest holder and earlier ones, after each
+    statement's organisation is resolved to the unit it is about (K30 G2)."""
+    statements = store.version_role_statements(conn, version_id)
+    listed = store.version_units(conn, version_id)
+    return roles.latest(roles.resolve(statements, listed))
+
+
+def stale_check(conn: store.Connection, version_id: int) -> StaleCheck | None:
+    """The check removing a claim that names an earlier holder of a role it names
+    (K30 G4); None for a version without role statements."""
+    found = current_roles(conn, version_id)
+    if not found:
+        return None
+
+    def check(text: str, whole: str) -> str:
+        return roles.earlier_holder(text, found, whole)
+
+    return check
+
+
+def structure_lookup(conn: store.Connection, version_id: int) -> StructureLookup | None:
+    """The company's current structure from the graph (K30 G3): the compiled
+    passage, which the answer request is pointed to (K31), when the user's words name
+    two of its groups or units, or a passage found names three of its groups (a
+    competing classification). None for a version without a structure or a compiled
+    passage."""
+    groups = store.version_structure(conn, version_id)
+    compiled = store.compiled_passage(conn, version_id)
+    if not groups or compiled is None:
+        return None
+    named = units.naming(store.version_units(conn, version_id))
+    names = [group["name"] for group in groups]
+
+    def lookup(words: str, passages: Sequence[Passage]) -> list[Passage]:
+        asked = units.structure_named(words, names) + len(named(words))
+        told = any(units.structure_named(p.text, names) >= 3 for p in passages)
+        return [compiled] if asked >= 2 or told else []
+
+    return lookup
+
+
 def role_lookup(conn: store.Connection, version_id: int) -> RoleLookup | None:
     """Who holds the roles a question's words ask about (K24): the latest dated
     statement of each (`roles.latest`, `roles.naming`) and its earlier holders, as the
     line for the answer request and their passages, oldest first. None for a version
     without role statements."""
-    found = roles.latest(store.version_role_statements(conn, version_id))
+    found = current_roles(conn, version_id)
     if not found:
         return None
     named = roles.naming(found)
@@ -360,8 +404,10 @@ def ask_and_record(
         scoped = scoped_retriever(conn, version_id, models, [u["id"] for u in asked])
         lookup = role_lookup(conn, version_id)
         judge = recording(llm.judge, calls)
+        structure = structure_lookup(conn, version_id)
+        stale = stale_check(conn, version_id)
         result = answer(question, retrieve, chat, extra, history, scoped, asked, lookup,
-                        judge)  # fmt: skip
+                        judge, structure, stale)  # fmt: skip
         seconds = time.perf_counter() - started
         removed = [{"text": r.text, "reason": r.reason} for r in result.rejected]
         answer_id = store.record_answer(

@@ -10,6 +10,14 @@ import pytest
 from petroknowledge import config, corpus, fetch, sources, units
 
 OWN = ["acme.test"]
+# The smallest PDF pdfium reads, created on 20 December 2022 by its metadata.
+DATED_PDF = (
+    b"%PDF-1.4\n1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj\n"
+    b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj\n"
+    b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 10 10] >> endobj\n"
+    b"4 0 obj << /CreationDate (D:20221220102933+01'00') >> endobj\n"
+    b"trailer << /Root 1 0 R /Info 4 0 R >>\n%%EOF\n"
+)
 
 
 def element(page: int, kind: str, text: str, section: list[str]) -> dict[str, Any]:
@@ -129,6 +137,10 @@ def test_an_index_is_built_from_every_saved_reading(
          "fetched_at": "2026-10-10T13:00:00+00:00"},
         {"company": "acme", "url": "https://acme.test/blocked"},  # never stored
     ]  # fmt: skip
+    files = tmp_path / "files"
+    files.mkdir()
+    (files / ("b" * 64)).write_bytes(DATED_PDF)
+    monkeypatch.setattr(config, "FILE_STORE", files)
     monkeypatch.setattr(config, "PAGE_READINGS", pages)
     monkeypatch.setattr(config, "READINGS", readings)
     monkeypatch.setattr(config, "TRANSCRIPTS", transcripts)
@@ -158,6 +170,30 @@ def test_an_index_is_built_from_every_saved_reading(
     assert rows[3]["text"].endswith("Signed in Abuja.")  # its transcript instead
     assert [d["title"] for d in documents] == ["New Pipeline Opens", "r", "gas"]
     assert documents[1]["fetched_at"] == "2026-10-10T11:00:00+00:00"
+    # Only the PDF is dated, by its file: a page and a spreadsheet are not.
+    assert [d["file_date"] for d in documents] == ["", "2022-12-20", ""]
+
+
+def test_a_pdf_is_dated_only_by_a_real_creation_date(tmp_path: Path) -> None:
+    for name, found in [("no-date", b"/Producer"), ("unreal", b"/CreationDate")]:
+        data = DATED_PDF.replace(b"/CreationDate", found)
+        (tmp_path / name).write_bytes(data.replace(b"D:20221220", b"D:00001301"))
+    (tmp_path / "early").write_bytes(DATED_PDF.replace(b"D:2022", b"D:1985"))
+
+    assert corpus.pdf_date(tmp_path / "no-date") == ""
+    assert corpus.pdf_date(tmp_path / "unreal") == ""  # month 13 of year 0
+    assert corpus.pdf_date(tmp_path / "early") == ""  # before any collected file
+
+
+def test_a_unit_s_page_without_its_name_in_the_title_takes_the_unit_s_name() -> None:
+    listed = [{"name": "Acme E&P Limited", "acronym": "AEP",
+               "url": "https://acme.test/aep"}]  # fmt: skip
+    history = {"url": "https://acme.test/aep", "title": "HISTORICAL ACTIVITIES"}
+    named = {"url": "https://acme.test/aep", "title": "Acme E&P Limited (AEP)"}
+
+    assert corpus.page_title(history, listed) == "Acme E&P Limited (AEP)"
+    assert corpus.page_title(named, listed) == "Acme E&P Limited (AEP)"
+    assert corpus.page_title(SAVED, listed) == "New Pipeline Opens"  # not a unit's
 
 
 PDF_URL = "https://acme.test/r.pdf"
@@ -217,7 +253,13 @@ def test_a_company_s_units_are_read_from_its_stored_units_page(
     (files / ("a" * 64)).write_text(html, encoding="utf-8")
     line = {"kind": "paragraph", "text": "Acme Gas Limited (AGL)",
             "section": ["Our Businesses"]}  # fmt: skip
-    (pages / f"{'a' * 64}.json").write_text(json.dumps({"elements": [line]}))
+    reading = {"url": url, "elements": [line]}
+    (pages / f"{'a' * 64}.json").write_text(json.dumps(reading))
+    # The unit's own page says what it was called before.
+    told = {"kind": "paragraph", "section": [], "text": "Acme Gas Limited (AGL), "
+            "formerly the Acme Gas Company (AGC), sells gas."}  # fmt: skip
+    own = {"url": "https://acme.test/acme-gas", "elements": [told]}
+    (pages / f"{'g' * 64}.json").write_text(json.dumps(own))
     monkeypatch.setattr(config, "FILE_STORE", files)
     monkeypatch.setattr(config, "PAGE_READINGS", pages)
     page = {"url": url, "section": "Our Businesses"}
@@ -231,6 +273,7 @@ def test_a_company_s_units_are_read_from_its_stored_units_page(
             "name": "Acme Gas Limited",
             "acronym": "AGL",
             "url": "https://acme.test/acme-gas",
+            "aliases": "Acme Gas Company; AGC",
         }
     ]
     monkeypatch.setattr(sources, "load", lambda company_id: {})

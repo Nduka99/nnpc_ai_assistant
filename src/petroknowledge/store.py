@@ -21,7 +21,7 @@ import psycopg
 from psycopg import sql
 from psycopg.types.json import Jsonb
 
-from petroknowledge import config
+from petroknowledge import config, units
 from petroknowledge.records import Passage
 from petroknowledge.retrieve import Embed, Rerank, fuse, rerank_top, unit_vector
 
@@ -106,12 +106,12 @@ def write_version(
         document_ids = {}
         for document in documents:
             row = conn.execute(
-                "INSERT INTO documents (url, title, fetched_at, sha256) "
-                "VALUES (%s, %s, %s, %s) "
-                "ON CONFLICT (url, sha256) DO UPDATE SET title = EXCLUDED.title "
-                "RETURNING id",
+                "INSERT INTO documents (url, title, fetched_at, sha256, file_date) "
+                "VALUES (%s, %s, %s, %s, %s::date) "
+                "ON CONFLICT (url, sha256) DO UPDATE SET title = EXCLUDED.title, "
+                "file_date = EXCLUDED.file_date RETURNING id",
                 (document["url"], document["title"], document["fetched_at"],
-                 document["sha256"]),
+                 document["sha256"], document.get("file_date") or None),
             ).fetchone()  # fmt: skip
             assert row is not None  # RETURNING always yields the row
             document_ids[document["url"]] = row[0]
@@ -372,16 +372,18 @@ def write_units(
     units: Sequence[Mapping[str, str]],
     members: Sequence[tuple[int, int]],
 ) -> list[int]:
-    """Store a version's units (name, acronym, url) and the passages in each one's
-    scope, as (place in `units`, passage id); return the units' ids, in order."""
+    """Store a version's units (name, acronym, url, former names) and the passages
+    in each one's scope, as (place in `units`, passage id); return the units' ids,
+    in order."""
     with conn.transaction():
         ids = []
         for unit in units:
             row = conn.execute(
-                "INSERT INTO units (index_version_id, name, acronym, url) "
-                "VALUES (%s, %s, %s, %s) RETURNING id",
-                (version_id, unit["name"], unit["acronym"], unit["url"]),
-            ).fetchone()
+                "INSERT INTO units (index_version_id, name, acronym, url, aliases) "
+                "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+                (version_id, unit["name"], unit["acronym"], unit["url"],
+                 unit.get("aliases", "")),
+            ).fetchone()  # fmt: skip
             assert row is not None  # RETURNING always yields the row
             ids.append(int(row[0]))
         with conn.cursor() as cursor:
@@ -392,15 +394,55 @@ def write_units(
     return ids
 
 
-def version_units(conn: Connection, version_id: int) -> list[dict[str, Any]]:
-    """A version's units (name, acronym, url, id), in the order they were listed."""
+def write_structure(
+    conn: Connection, version_id: int, rows: Sequence[tuple[str, str, int | None]]
+) -> None:
+    """Store a version's structure (K30 G1): (group, member, unit id or None) in the
+    units page's order."""
+    with conn.transaction(), conn.cursor() as cursor:
+        cursor.executemany(
+            "INSERT INTO structure (index_version_id, position, group_name, member, "
+            "unit_id) VALUES (%s, %s, %s, %s, %s)",
+            [(version_id, n, group, member, unit_id)
+             for n, (group, member, unit_id) in enumerate(rows, start=1)],
+        )  # fmt: skip
+
+
+def version_structure(conn: Connection, version_id: int) -> list[dict[str, Any]]:
+    """A version's structure as groups (name and entries), in the page's order."""
     rows = conn.execute(
-        "SELECT id, name, acronym, url FROM units WHERE index_version_id = %s "
-        "ORDER BY id",
+        "SELECT group_name, member FROM structure WHERE index_version_id = %s "
+        "ORDER BY position",
         (version_id,),
     ).fetchall()
-    return [{"name": row[1], "acronym": row[2], "url": row[3], "id": row[0]}
-            for row in rows]  # fmt: skip
+    groups: list[dict[str, Any]] = []
+    for group, member in rows:
+        if not groups or groups[-1]["name"] != group:
+            groups.append({"name": group, "entries": []})
+        groups[-1]["entries"].append(member)
+    return groups
+
+
+def compiled_passage(conn: Connection, version_id: int) -> Passage | None:
+    """A version's compiled units passage (K27), if it holds one."""
+    row = conn.execute(
+        "SELECT id FROM passages WHERE index_version_id = %s AND heading = %s "
+        "ORDER BY id LIMIT 1",
+        (version_id, units.COMPILED),
+    ).fetchone()
+    return load_passages(conn, [row[0]])[0] if row else None
+
+
+def version_units(conn: Connection, version_id: int) -> list[dict[str, Any]]:
+    """A version's units (name, acronym, url, former names, id), in the order they
+    were listed."""
+    rows = conn.execute(
+        "SELECT id, name, acronym, url, aliases FROM units "
+        "WHERE index_version_id = %s ORDER BY id",
+        (version_id,),
+    ).fetchall()
+    return [{"name": row[1], "acronym": row[2], "url": row[3], "aliases": row[4],
+             "id": row[0]} for row in rows]  # fmt: skip
 
 
 def dated_passages(
@@ -473,21 +515,24 @@ def write_role_statements(
 
 
 def version_role_statements(conn: Connection, version_id: int) -> list[dict[str, Any]]:
-    """A version's role statements, each with its passage's title and its date as
-    YYYY-MM-DD."""
+    """A version's role statements, each with its passage's title and address and its
+    date as YYYY-MM-DD."""
     rows = conn.execute(
         "SELECT s.passage_id, s.person, s.role, s.organisation, s.quote, s.stated_on, "
-        "s.date_kind, p.title FROM role_statements s "
+        "s.date_kind, p.title, d.url FROM role_statements s "
         "JOIN passages p ON p.id = s.passage_id "
+        "JOIN documents d ON d.id = p.document_id "
         "WHERE s.index_version_id = %s ORDER BY s.id",
         (version_id,),
     ).fetchall()
     found = []
-    for passage_id, person, role, organisation, quote, stated_on, kind, title in rows:
+    for row in rows:
+        passage_id, person, role, organisation, quote, stated_on, kind = row[:7]
+        title, url = row[7:]
         found.append({"passage_id": passage_id, "person": person, "role": role,
                       "organisation": organisation, "quote": quote,
                       "stated_on": stated_on.isoformat(), "date_kind": kind,
-                      "title": title})  # fmt: skip
+                      "title": title, "url": url})  # fmt: skip
     return found
 
 
@@ -497,7 +542,8 @@ def load_passages(conn: Connection, passage_ids: Sequence[int]) -> list[Passage]
         "SELECT passages.id, documents.url, passages.title, passages.heading, "
         "passages.text, documents.fetched_at, passages.page, passages.context, "
         "coalesce(passages.image, ''), passages.quotable, "
-        "coalesce(passages.published::text, '') "
+        "coalesce(passages.published::text, ''), passages.channel, "
+        "coalesce(documents.file_date::text, '') "
         "FROM passages JOIN documents ON documents.id = passages.document_id "
         "WHERE passages.id = ANY(%s)",
         (list(passage_ids),),
@@ -505,11 +551,11 @@ def load_passages(conn: Connection, passage_ids: Sequence[int]) -> list[Passage]
     by_id = {}
     for row in rows:
         passage_id, url, title, heading, text, fetched_at, page, context = row[:8]
-        image, quotable, published = row[8:]
+        image, quotable, published, channel, file_date = row[8:]
         captured = fetched_at.astimezone(UTC).isoformat(timespec="seconds")
         by_id[passage_id] = Passage(
             passage_id, url, title, heading, text, captured, page, context, image,
-            quotable, published,
+            quotable, published, channel, file_date,
         )  # fmt: skip
     return [by_id[passage_id] for passage_id in passage_ids]
 

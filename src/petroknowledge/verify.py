@@ -4,19 +4,25 @@ verify, carried over for NNPC).
 A claim is shown only if every check passes:
 
 1. it has at least one quote, and every source id names a supplied passage;
-2. every quote appears in a passage that may be quoted, ignoring only case and
-   whitespace; a quote the model cited to the wrong passage is cited to the supplied
+2. every quote appears in a passage that may be quoted, ignoring only case,
+   whitespace and a punctuation mark added or left out between words
+   (`find_quote`); a quote the model cited to the wrong passage is cited to the supplied
    passage holding it. A scanned page's transcript is searched but never quoted
    (K12), so a quote found only there is refused;
 3. every number in the claim, with its sign, appears in one of its quotes, or, if
    unsigned, in a cited passage's title, heading or text together with the token it
-   is part of ("OML118", "2,548.0bn") or the word before it ("OML 118");
+   is part of ("OML118", "2,548.0bn") or the word before it ("OML 118"), or in the
+   cited source's own title or heading, or in its publication date: its year
+   wherever the claim states that year (K32), its day when the claim states the
+   date with its month (K29 F4). The request's names for its passages
+   ("S1") are not part of the claim: they are removed before checking and showing;
 4. every amount keeps what it measures: a currency, scale or unit the claim gives a
    number ("₦5.4 trillion", "1.73 mmbopd", "4,223 mmscf/d") is given to that number
    in its quotes, or, for a number quoted bare from a table, named by the cited
    passage's column headers, so the digits cannot be kept while the amount changes;
 5. every regulation, licence, approval or compliance term the claim uses, and every
-   named regulation ("Upstream Petroleum Measurement Regulations"), is in its quotes;
+   named regulation ("Upstream Petroleum Measurement Regulations"), is in its quotes
+   or in the title or heading of the cited source, which may be that regulation;
 6. it states no per-unit price, whatever it quotes (`prices`).
 
 These are evidence checks: none of them tries to judge what a sentence means, so
@@ -53,6 +59,23 @@ REGULATION_TERMS = {
 # A named regulation: the capitalised words before "Regulations", without a
 # sentence's opening "The".
 REGULATION_NAME = re.compile(r"((?:(?!The\b)[A-Z][\w'’-]*\s+){1,6})Regulations?\b")
+# The request's own names for its passages, as a model writes them into a claim: a
+# bracketed group ("(S1)", "[S2, S3]") or a bare one ("According to S8").
+LABEL_GROUP = re.compile(r"\s*[(\[]\s*S\d+(?:\s*(?:,|;|and)\s*S\d+)*\s*[)\]]")
+LABEL = re.compile(r"\bS\d+\b")
+MONTHS = ("January", "February", "March", "April", "May", "June", "July", "August",
+          "September", "October", "November", "December")  # fmt: skip
+# A number standing alone: not part of a word or name ("2026", not "OML118" or
+# "118B").
+STANDALONE = re.compile(r"(?<![\w.])[0-9]+(?:\.[0-9]+)?(?![\w.]?\w)")
+# A date ("July 7, 2023", "7 July 2023", "22nd December, 2023", "29 Sept. 2026") and a
+# year standing alone: numbers that are no figure (K32, `states_figure`).
+MONTH = "(?:" + "|".join(["Sept", *(f"{m[:3]}(?:{m[3:]})?" for m in MONTHS)]) + ")"
+DATE = re.compile(
+    rf"\b(?:\d{{1,2}}(?:st|nd|rd|th)?\s+(?:of\s+)?)?{MONTH}(?![a-z])\.?"
+    rf"(?:\s+\d{{1,2}}(?:st|nd|rd|th)?\b,?)?(?:\s+\d{{4}})?"
+)
+YEAR = re.compile(r"(?<![\w.])(?:19|20)\d{2}(?![\w.]?\w)")
 
 # What a number measures, each form folded to one name. Forms as NNPC writes them
 # (measured on index version 1's passages).
@@ -99,16 +122,24 @@ MEASURE = re.compile(
     rf"(?:\s(?P<named>naira|dollars?)\b)?",
     re.IGNORECASE,
 )
-# The gap between two quoted words: whitespace, which may hold the " | " this project
-# puts between a table's cells (Lime Green X9).
-WORD_GAP = r"\s+(?:\|\s+)*"
+# The gap between two quoted numbers: whitespace, which may hold the " | " this
+# project puts between a table's cells (Lime Green X9).
+NUMBER_GAP = r"\s+(?:\|\s+)*"
+# Between two quoted words the passage may also hold a mark the quote leaves out
+# ("Gas & Power: To unlock" quoted as "Gas & Power To unlock", K29 F5).
+WORD_GAP = r"[,;:.]?" + NUMBER_GAP
 # Where a digit meets a non-digit, or at punctuation, whitespace is optional: Docling
-# spaces superscripts that the page and its text layer do not ("N/mm 2").
-OPTIONAL_GAP = r"\s*(?:\|\s+)*"
+# spaces superscripts that the page and its text layer do not ("N/mm 2"). A mark the
+# quote leaves out may stand there too, when spacing follows it.
+OPTIONAL_GAP = r"\s*(?:[,;:.](?=\s)\s*)?(?:\|\s+)*"
 # Marks a model writes where a table's cell mark stands ("Limited; EnServ" for
 # "Limited | EnServ", K27c). Never a hyphen or slash, and never between digits:
 # "4 | 6" is not the range "4-6", the number "4, 6" or the time "4:6".
 CELL_PUNCTUATION = {";", ",", ":"}
+# Marks a model adds or drops between words or at a quote's end ("(NGML), is" for
+# "(NGML) is", "Limited." for a line ending "Limited"; K29 F5): they never change
+# which words are quoted. Never between digits, where they make a number.
+SOFT_MARKS = {",", ";", ":", "."}
 # Typographic forms of one character; the page's curly quotes, which Docling writes
 # straight, are the same quote marks.
 TYPOGRAPHY = str.maketrans(
@@ -125,10 +156,14 @@ UNIT = re.compile(r"\d+(?:[.,]\d+)*|\S")
 def folded(text: str) -> tuple[str, tuple[int, ...]]:
     """The text with typographic and Unicode compatibility forms folded (NFKC: "²"
     as "2", "ﬁ" as "fi"), and each folded character's position in the text.
+    Invisible format characters (zero-width spaces, soft hyphens) are left out: a
+    copied quote never holds them (K30: 10 passages, one lost role statement).
     Remembered, as the same passages are checked again and again."""
     chars = []
     where = []
     for index, char in enumerate(text):
+        if unicodedata.category(char) == "Cf":
+            continue
         form = unicodedata.normalize("NFKC", char.translate(TYPOGRAPHY))
         for piece in form.translate(TYPOGRAPHY):
             chars.append(piece)
@@ -156,9 +191,12 @@ def quote_pattern(quote: str) -> str:
     parts = []
     for index, unit in enumerate(units):
         if index:
-            previous = units[index - 1]
-            spaced = unit.start() > previous.end()
-            if index - 1 in decimal or same_kind(previous.group(), unit.group()):
+            previous = units[index - 1].group()
+            spaced = unit.start() > units[index - 1].end()
+            numeric = previous[-1].isdigit() and unit.group()[0].isdigit()
+            if index - 1 in decimal or numeric:
+                parts.append(NUMBER_GAP if spaced else "")
+            elif same_kind(previous, unit.group()):
                 parts.append(WORD_GAP if spaced else "")
             else:
                 parts.append(OPTIONAL_GAP)
@@ -167,16 +205,21 @@ def quote_pattern(quote: str) -> str:
 
 
 def unit_pattern(units: Sequence[re.Match[str]], index: int) -> str:
-    """The pattern one quoted unit is found by: itself, or, for a semicolon, comma
-    or colon between two units that are not both digits, a table's cell mark."""
+    """The pattern one quoted unit is found by: itself, or, for a mark between two
+    units that are not both digits or at the quote's end, the mark or nothing
+    (`SOFT_MARKS`); a semicolon, comma or colon between them may also be a table's
+    cell mark."""
     text = units[index].group()
     inside = 0 < index < len(units) - 1
-    if text not in CELL_PUNCTUATION or not inside:
+    last = 0 < index == len(units) - 1
+    if text not in SOFT_MARKS or not (inside or last):
         return re.escape(text)
-    before, after = units[index - 1].group(), units[index + 1].group()
-    if before[-1].isdigit() and after[0].isdigit():
-        return re.escape(text)
-    return f"(?:{re.escape(text)}|\\|)"
+    if inside:
+        before, after = units[index - 1].group(), units[index + 1].group()
+        if before[-1].isdigit() and after[0].isdigit():
+            return re.escape(text)
+    cell = "|\\|" if inside and text in CELL_PUNCTUATION else ""
+    return f"(?:{re.escape(text)}{cell})?"
 
 
 def find_quote(quote: str, text: str) -> str | None:
@@ -186,8 +229,9 @@ def find_quote(quote: str, text: str) -> str | None:
     whitespace where a model re-wraps lines or where a digit meets a non-digit
     (superscripts); between letters, or digits, spacing must be the quote's. The
     table cell mark reads as whitespace, or as a semicolon, comma or colon between
-    words (K27c). The quote must start and end at word edges, so "3 to 6" cannot
-    match "3 to 60 mm".
+    words (K27c). A comma, semicolon, colon or full stop may be added or left out
+    between words and at the quote's end, never between digits (K29 F5). The quote
+    must start and end at word edges, so "3 to 6" cannot match "3 to 60 mm".
     """
     if not quote.split():
         return None
@@ -248,6 +292,13 @@ def numbers(text: str) -> set[str]:
     return {n.replace("−", "-").replace("–", "-") for n in found}
 
 
+def states_figure(text: str) -> bool:
+    """Whether a claim states a figure: a number other than a date's day or a year
+    ("averaged 1.71 million barrels per day", "21 units"), where a substituted
+    period, measure or entity is the error the grounding check catches (K32)."""
+    return bool(numbers(YEAR.sub(" ", DATE.sub(" ", text))))
+
+
 def number_units(claim: str, number: str) -> list[str]:
     """What an unsigned number in a claim is found with in a passage: each token it is
     part of ("OML118", "25kg"), or, where it stands alone, the word before it and the
@@ -268,6 +319,73 @@ def number_units(claim: str, number: str) -> list[str]:
         if before:
             units.append(claim[before.start(1) : end])
     return units
+
+
+def without_labels(text: str, sources: Mapping[str, Passage]) -> str:
+    """The claim without the request's own names for its passages ("S1"), which a
+    model sometimes writes into a claim (K29 F4): a bracketed group of them is
+    removed, a bare one is replaced by its passage's title."""
+
+    def bracketed(match: re.Match[str]) -> str:
+        names = re.findall(r"S\d+", match.group())
+        return "" if all(name in sources for name in names) else match.group()
+
+    def bare(match: re.Match[str]) -> str:
+        passage = sources.get(match.group())
+        return passage.title if passage is not None else match.group()
+
+    return LABEL.sub(bare, LABEL_GROUP.sub(bracketed, text)).strip()
+
+
+def source_numbers(claim: str, passages: Sequence[Passage]) -> set[str]:
+    """The numbers a cited passage's source names (K29 F4): a number standing alone
+    in its title or heading and in the claim ("the 2026 licensing amendment"; never
+    digits inside a name such as "OML118"), its publication year wherever the claim
+    states it ("at the 2023 commissioning", K32), its whole date as the request shows
+    it ("2026-07-07", K32 B2b), and its publication day when the claim states the date
+    with its month ("the 29 September 2026 release"). A year
+    that is instead a figure's period ("in 2023, revenue was ₦5 trillion" from a 2023
+    post about 2022) comes with a figure, which the grounding check judges."""
+    named = "\n".join(f"{p.title}\n{p.heading}" for p in passages)
+    standing = set(STANDALONE.findall(claim))
+    found = set(STANDALONE.findall(named)) & standing
+    for passage in passages:
+        if not passage.published:
+            continue
+        year, month, day = passage.published[:10].split("-")
+        if year in standing:
+            found.add(year)
+        # The date as the request shows it beside the passage ("2026-07-07", K32 B2b).
+        if passage.published[:10] in claim:
+            found |= {year, month, day}
+        stated = re.search(
+            rf"\b(?:(\d{{1,2}})\s+)?{MONTHS[int(month) - 1][:3]}[a-z]*\.?\s+"
+            rf"(?:(\d{{1,2}}),?\s+)?{year}\b",
+            claim,
+            re.IGNORECASE,
+        )
+        if stated and str(int(day)) in (stated[1], stated[2]):
+            found.add(str(int(day)))
+    return found
+
+
+def caption_numbers(quote: str, passage: Passage) -> set[str]:
+    """The numbers in the caption of the table a quoted row comes from ("Table 1.
+    Nigeria's energy overview, 2023"): the line just above the table's rows, which
+    applies to every row, as its headers do (K20, K31). A quote that is not a table
+    row has none."""
+    if " | " not in quote:
+        return set()
+    lines = passage.text.split("\n")
+    first = quote.split("\n")[0]
+    at = next((n for n, line in enumerate(lines) if first in line), None)
+    if at is None:
+        return set()
+    while at > 0 and " | " in lines[at - 1]:
+        at -= 1
+    if at == 0:
+        return set()
+    return set(STANDALONE.findall(lines[at - 1]))
 
 
 def named_number(claim: str, number: str, passages: Sequence[Passage]) -> bool:
@@ -396,13 +514,16 @@ def unquoted_regulations(claim: str, quoted: str) -> list[str]:
 
 
 def check_claim(draft: DraftClaim, sources: Mapping[str, Passage]) -> Claim | Rejection:
-    """The verified claim with its citations, or the reason it must be removed."""
+    """The verified claim with its citations, or the reason it must be removed. The
+    claim is checked and shown without the request's names for its passages."""
     if not draft.evidence:
         return Rejection(draft.text, "no quote")
     if prices.states_price(draft.text):
         return Rejection(draft.text, "states a per-unit price")
+    text = without_labels(draft.text, sources)
     evidence = []
     cited = []
+    captions: set[str] = set()
     for item in draft.evidence:
         passage = sources.get(item.source_id)
         if passage is None:
@@ -418,6 +539,7 @@ def check_claim(draft: DraftClaim, sources: Mapping[str, Passage]) -> Claim | Re
             )
         passage, quote = found
         cited.append(passage)
+        captions |= caption_numbers(quote, passage)
         evidence.append(
             Evidence(
                 passage_id=passage.id,
@@ -431,23 +553,29 @@ def check_claim(draft: DraftClaim, sources: Mapping[str, Passage]) -> Claim | Re
             )
         )
     quoted = " ".join(item.quote for item in evidence)
+    unquoted_numbers = (
+        numbers(text) - numbers(quoted) - source_numbers(text, cited) - captions
+    )
     missing = [
         number
-        for number in sorted(numbers(draft.text) - numbers(quoted))
-        if not named_number(draft.text, number, cited)
+        for number in sorted(unquoted_numbers)
+        if not named_number(text, number, cited)
     ]
     if missing:
         return Rejection(draft.text, f"number not in its quotes: {', '.join(missing)}")
     headers = "\n".join(f"{p.title}\n{p.heading}\n{p.context}" for p in cited)
-    changed = changed_amounts(draft.text, quoted, headers)
+    changed = changed_amounts(text, quoted, headers)
     if changed:
         return Rejection(draft.text, f"amount not as quoted: {', '.join(changed)}")
-    unquoted = unquoted_regulations(draft.text, quoted)
+    # A regulation the cited source is ("Petroleum Industry Act 2021", the
+    # "Licencing Round Amendment Regulations") is named by its title (K29 F4).
+    named = "\n".join(f"{p.title}\n{p.heading}" for p in cited)
+    unquoted = unquoted_regulations(text, f"{quoted}\n{named}")
     if unquoted:
         return Rejection(
             draft.text, f"regulation not in its quotes: {', '.join(unquoted)}"
         )
-    return Claim(draft.text, tuple(evidence), draft.part)
+    return Claim(text, tuple(evidence), draft.part)
 
 
 def verify(

@@ -33,6 +33,13 @@ class Passage:
     # A post's publication date (ISO 8601), else empty: shown by the application, so
     # the model never has to write a date its quotes do not hold.
     published: str = ""
+    # Who it comes from (K29 F1): "company" for the company's own sites, "guidance"
+    # for third parties (encyclopedia, regulator, government), "picture" for a
+    # picture; empty where unknown.
+    channel: str = ""
+    # Its document's own file date (a PDF's creation date, ISO 8601), else empty:
+    # dates a document whose publication date is unknown, never shown as published.
+    file_date: str = ""
 
 
 def described(title: str, context: str, text: str) -> str:

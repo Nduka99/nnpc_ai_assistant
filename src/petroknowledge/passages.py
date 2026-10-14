@@ -77,16 +77,38 @@ def table_lines(table: dict[str, Any], data: set[int]) -> tuple[list[str], list[
     return headers, rows
 
 
+def group_row(line: str) -> bool:
+    """Whether a table row spans the whole table, every cell the same as a merged
+    cell is read ("DOWNSTREAM | DOWNSTREAM | DOWNSTREAM"): it names the group of the
+    rows below it."""
+    cells = line.split(CELL)
+    return len(cells) > 1 and len(set(cells)) == 1 and cells[0].strip() != ""
+
+
 def whole_table(headers: list[str], rows: list[str]) -> list[str]:
     """A table as passages: its header lines, then its rows, split between rows
-    when it is too long, each part starting with the header lines."""
+    when it is too long, each part starting with the header lines and, unless it
+    starts with a group row, the last group row before it (K29 F6): a part still
+    says which group its rows are in. A part never ends with a group row: it moves
+    to the next part, with its rows."""
     budget = config.MAX_PASSAGE_CHARS - len("\n".join(headers)) - 1
     parts: list[list[str]] = [[]]
+    carried = [""]  # the group row each part repeats
+    group = ""
     for row in rows:
-        if parts[-1] and len("\n".join([*parts[-1], row])) > budget:
-            parts.append([])
+        room = budget - (len(carried[-1]) + 1 if carried[-1] else 0)
+        if parts[-1] and len("\n".join([*parts[-1], row])) > room:
+            last = parts[-1]
+            moved = [last.pop()] if len(last) > 1 and group_row(last[-1]) else []
+            parts.append(moved)
+            carried.append("" if moved or group_row(row) else group)
         parts[-1].append(row)
-    return ["\n".join([*headers, *part]) for part in parts]
+        if group_row(row):
+            group = row
+    texts = []
+    for repeated, part in zip(carried, parts, strict=True):
+        texts.append("\n".join([*headers, *([repeated] if repeated else []), *part]))
+    return texts
 
 
 def table_passages(

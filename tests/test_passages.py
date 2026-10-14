@@ -58,6 +58,28 @@ def test_a_long_table_is_split_between_rows_each_part_with_its_headers(
     ]
 
 
+def test_a_split_table_part_repeats_the_group_row_its_rows_belong_to(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(config, "MAX_PASSAGE_CHARS", 50)
+    rows = ["GAS | GAS | GAS", "1 | AGL | sales", "2 | AGI | pipes", "3 | AGP | power",
+            "OIL | OIL | OIL", "4 | AOL | wells"]  # fmt: skip
+    ending = ["1 | AGL | sales", "OIL | OIL | OIL", "4 | AOL | wells"]
+
+    assert passages.whole_table(["No | Unit | Work"], rows) == [
+        "No | Unit | Work\nGAS | GAS | GAS\n1 | AGL | sales",
+        "No | Unit | Work\nGAS | GAS | GAS\n2 | AGI | pipes",
+        "No | Unit | Work\nGAS | GAS | GAS\n3 | AGP | power",
+        "No | Unit | Work\nOIL | OIL | OIL\n4 | AOL | wells",
+    ]
+    assert passages.whole_table(["No | Unit | Work"], ending) == [
+        "No | Unit | Work\n1 | AGL | sales",
+        "No | Unit | Work\nOIL | OIL | OIL\n4 | AOL | wells",  # moved with its rows
+    ]
+    assert not passages.group_row("Fire")  # one cell is not a group row
+    assert not passages.group_row(" |  | ")  # nor empty cells
+
+
 def test_each_row_is_a_passage_with_the_column_headers_in_its_context() -> None:
     rows = passages.table_passages(TABLE[0], TABLE, "rows")
     both = passages.table_passages(TABLE[0], TABLE, "both")

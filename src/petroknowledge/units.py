@@ -6,7 +6,8 @@ A unit is a line of the units page's named section, as the page was read, that
 links to a page of its own: "NNPC Gas Marketing Limited (NGML)" with its link. They
 are read from the company's structure, never from a hand-written list. A text names
 a unit by its acronym or by its name without the legal form ("NNPC Gas Marketing"),
-as whole words, with case, spacing, punctuation and "&"/"and" folded. A passage is
+as whole words, with case, spacing, punctuation and "&"/"and" folded, or by a former
+name its own page gives it ("NPDC" for NEPL, K29). A passage is
 in a unit's scope when its document is the unit's page, or when its title or its
 text names the unit.
 
@@ -27,11 +28,21 @@ from urllib.parse import urljoin
 
 from bs4 import BeautifulSoup
 
-Unit = dict[str, str]  # name, acronym ("" for none), url
+# name, acronym ("" for none), url, and any former names its own page gives it
+# ("aliases", "; " between them; K29 F2)
+Unit = dict[str, str]
 Group = dict[str, Any]  # name, words (lines), entries (lines), as the page shows them
 LEGAL_FORMS = ("limited", "ltd", "gte", "plc", "company")
 BRACKETED = re.compile(r"^(?P<name>.+?)\s*\(\s*(?P<acronym>[^()]+?)\s*\)$")
 COMPILED = "Units listed on this page, by group (compiled from the page's list)"
+# A former name as a unit's own page states it: "formerly (known as) (the) <Name>
+# (<ACRONYM>)". "Formerly part of ..." is not a name: a name starts with a capital.
+FORMERLY = re.compile(
+    r"\bformerly\s+(?:known\s+as\s+)?(?:the\s+)?"
+    r"(?P<name>[A-Z][\w&'’.-]*(?:\s+(?:[A-Z][\w&'’.-]*|of|and|for))*)"
+    r"(?:\s*\((?P<acronym>[A-Z][\w&]{1,9})\))?"
+)
+SENTENCE_END = re.compile(r"(?<=[.!?])\s+")
 
 
 def fold(text: str) -> str:
@@ -120,13 +131,43 @@ def compiled_text(section: str, groups: Sequence[Group]) -> str:
     return "\n".join(lines)
 
 
+def former_names(text: str, unit: Unit) -> list[str]:
+    """The names a unit's own page says it formerly had, with their acronyms, from
+    sentences that name the unit before saying so ("NNPC E&P Limited (NEPL),
+    formerly the Nigerian Petroleum Development Company (NPDC)"; K29 F2)."""
+    named = naming([unit])
+    found: list[str] = []
+    for sentence in SENTENCE_END.split(text):
+        for match in FORMERLY.finditer(sentence):
+            if not named(sentence[: match.start()]):
+                continue
+            for name in (match["name"], match["acronym"]):
+                if name and name not in found:
+                    found.append(name)
+    return found
+
+
+def structure_named(text: str, group_names: Sequence[str]) -> int:
+    """How many of the groups' names a text names, as whole words, folded; a list
+    without group lines has one nameless group, which no text names."""
+    folded = fold(text)
+    found = 0
+    for name in group_names:
+        if fold(name) and re.search(rf"\b{re.escape(fold(name))}\b", folded):
+            found += 1
+    return found
+
+
 def naming(units: Sequence[Unit]) -> Callable[[str], list[int]]:
-    """A function giving the units a text names, by their place in `units`."""
+    """A function giving the units a text names, by their place in `units`: by
+    name, acronym or a former name."""
     patterns = []
     for unit in units:
         names = [short_name(unit["name"])]
         if unit["acronym"]:
             names.append(fold(unit["acronym"]))
+        names += [short_name(alias) for alias in unit.get("aliases", "").split("; ")
+                  if alias]  # fmt: skip
         either = "|".join(re.escape(name) for name in names)
         patterns.append(re.compile(rf"\b(?:{either})\b"))
 

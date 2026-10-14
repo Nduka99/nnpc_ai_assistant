@@ -65,22 +65,21 @@ test("the empty thread teaches the input and its examples ask themselves", async
   ).toBeVisible();
   expect(screen.queryByRole("button", { name: "New conversation" })).toBeNull();
   expect(screen.getByText(/Questions and answers are recorded/)).toBeVisible();
+  expect(
+    screen.getByText(/Tips for getting good answers are under How to ask/),
+  ).toBeVisible();
   await user.click(
-    screen.getByRole("button", {
-      name: "Who is NNPC's Group Chief Executive Officer?",
-    }),
+    screen.getByRole("button", { name: "What gas products does NGML offer?" }),
   );
 
   expect(asked[0]).toMatchObject({
-    question: "Who is NNPC's Group Chief Executive Officer?",
+    question: "What gas products does NGML offer?",
     conversationId: null,
   });
   // Focus waits in the question box, where Esc and the next question are.
   expect(screen.getByLabelText("Your question")).toHaveFocus();
   expect(
-    await screen.findByRole("heading", {
-      name: "Who is NNPC's Group Chief Executive Officer?",
-    }),
+    await screen.findByRole("heading", { name: "What gas products does NGML offer?" }),
   ).toBeVisible();
 });
 
@@ -431,7 +430,9 @@ test("New conversation forgets the conversation id, and stops an answer on its w
   await user.click(screen.getByRole("button", { name: "New conversation" }));
   expect(asked[1]?.signal?.aborted).toBe(true);
   // Until the stopped answer has come back, nothing new is asked.
-  await user.click(screen.getByRole("button", { name: "What does NNPC Shipping do?" }));
+  await user.click(
+    screen.getByRole("button", { name: "What gas products does NGML offer?" }),
+  );
   expect(asked).toHaveLength(2);
   // The stopped answer arrives after the thread was cleared, and is dropped.
   asked[1]?.send({ kind: "stopped" });
@@ -664,4 +665,94 @@ test("feedback that cannot be sent says so, and a second click while sending sen
   );
   expect(slow).toHaveBeenCalledTimes(1);
   vi.unstubAllGlobals();
+});
+
+test("How to ask opens over the conversation and closes by its toggle, Close or Esc", async () => {
+  const { user } = start();
+  const toggle = screen.getByRole("button", { name: "How to ask" });
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+  expect(toggle).toHaveAttribute("aria-controls", "asking-guide");
+
+  await user.click(toggle);
+  const guide = screen.getByRole("region", { name: "How to ask" });
+  expect(toggle).toHaveAttribute("aria-expanded", "true");
+  expect(within(guide).getByText("Ask for a person by their role.")).toBeVisible();
+  // It is read from the start: focus moves to its heading.
+  expect(within(guide).getByRole("heading", { name: "How to ask" })).toHaveFocus();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+  expect(toggle).toHaveFocus();
+
+  await user.click(toggle);
+  await user.click(screen.getByRole("button", { name: "Close" }));
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+  expect(toggle).toHaveFocus();
+
+  await user.click(toggle);
+  await user.click(toggle);
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+  expect(toggle).toHaveAttribute("aria-expanded", "false");
+});
+
+test("a starter question in the guide asks itself and the guide closes", async () => {
+  const { user, asked } = start();
+  await user.click(screen.getByRole("button", { name: "How to ask" }));
+  const guide = screen.getByRole("region", { name: "How to ask" });
+
+  await user.click(
+    within(guide).getByRole("button", {
+      name: "Who joined NNPC Shipping in the tanker venture announced in February 2025?",
+    }),
+  );
+
+  expect(asked[0]?.question).toBe(
+    "Who joined NNPC Shipping in the tanker venture announced in February 2025?",
+  );
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+});
+
+test("with the guide open, Esc closes it before it stops an answer, and asking closes it", async () => {
+  const { user, asked } = start();
+  await user.type(screen.getByLabelText("Your question"), "Where?{Enter}");
+  await user.click(screen.getByRole("button", { name: "How to ask" }));
+
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+  expect(asked[0]?.signal?.aborted).toBe(false);
+  await user.keyboard("{Escape}");
+  expect(asked[0]?.signal?.aborted).toBe(true);
+  asked[0]?.finish();
+  await screen.findByRole("button", { name: "Ask" });
+
+  await user.click(screen.getByRole("button", { name: "How to ask" }));
+  await user.type(screen.getByLabelText("Your question"), "And when?{Enter}");
+  expect(screen.queryByRole("region", { name: "How to ask" })).toBeNull();
+});
+
+test("a refusal offers Tips for asking, which opens the guide; an answer does not", async () => {
+  const { user, asked } = start();
+  await askAndAnswer(user, asked, "What is NGIC?", {
+    kind: "answer",
+    recorded: recorded(),
+  });
+  expect(screen.queryByRole("button", { name: "Tips for asking" })).toBeNull();
+
+  const refusal = recorded(
+    { understood_as: ["Who supplies Kano?"] },
+    {
+      status: "insufficient_evidence",
+      notice: "I could not find enough support.",
+      claims: [],
+      sources: [],
+    },
+  );
+  await askAndAnswer(user, asked, "Who supplies Kano?", {
+    kind: "answer",
+    recorded: refusal,
+  });
+  expect(screen.getByText("Asking another way can help.")).toBeVisible();
+  await user.click(screen.getByRole("button", { name: "Tips for asking" }));
+
+  expect(screen.getByRole("region", { name: "How to ask" })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "How to ask" })).toHaveFocus();
 });

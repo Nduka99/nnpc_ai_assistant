@@ -230,6 +230,28 @@ It needs three local model servers (llama.cpp):
 - the reranker (bge-reranker-v2-m3) on 8082;
 - the generator, Gemma 4 26B-A4B, on 8080.
 
+## How to ask
+
+These habits were measured on development questions that had failed: asked again
+by them, most were answered. The web page shows the same list under "How to ask",
+beside the question box.
+
+1. **Name what you mean.** Say the unit, company or report: "NGIC's managing
+   director", not "who runs the gas pipes". Broad questions fail most.
+2. **Ask for a person by their role.** Use the title or the unit's initials: "Who is
+   NGPIS's Chief Gas and Power Investment Officer?"
+3. **One thing at a time works best.** Ask for a long list group by group, and
+   compare two things in two questions.
+4. **In a longer conversation, name the subject again.** After a few questions, or
+   when you change topic, say "NNPC HMO's growth phase", not "its".
+5. **Ask what the documents say, not what to do.** "Does NNPC HMO list occupational
+   health?" gets an answer; "Should we sign their contract?" gets an advice
+   referral.
+
+When it cannot answer, the reply says so, shows what it searched for, lists the
+closest pages and the scanned pages or pictures it could not quote, and offers
+these tips.
+
 ## Serve
 
 ```sh

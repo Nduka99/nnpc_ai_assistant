@@ -562,9 +562,11 @@ def test_a_turn_needs_its_conversation_and_a_conversation_its_turn(
 
 
 UNITS = [
-    {"name": "Acme Refining Limited", "acronym": "ARL", "url": SITE + "about"},
-    {"name": "Acme Pipelines", "acronym": "", "url": SITE + "pipelines"},
-]
+    {"name": "Acme Refining Limited", "acronym": "ARL", "url": SITE + "about",
+     "aliases": "Acme Refinery Company; ARC"},
+    {"name": "Acme Pipelines", "acronym": "", "url": SITE + "pipelines",
+     "aliases": ""},
+]  # fmt: skip
 
 
 def test_a_version_keeps_its_units_and_each_unit_s_passages(
@@ -638,7 +640,8 @@ def test_role_readings_are_kept_by_text_and_statements_by_version(
              "date_kind": "published"}  # fmt: skip
     store.write_role_statements(pg, version, [said | dates])
     found = store.version_role_statements(pg, version)
-    assert found == [said | dates | {"title": "Pipeline Opens"}]
+    page = {"title": "Pipeline Opens", "url": SITE + "news/pipeline"}
+    assert found == [said | dates | page]
     store.delete_version(pg, version)
     assert pg.execute("SELECT count(*) FROM role_statements").fetchone() == (0,)
 

@@ -19,9 +19,12 @@ one passage (K27, which failed its first gate, so it is off by default).
 import json
 import re
 from dataclasses import asdict
+from datetime import date
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlsplit
+
+import pypdfium2
 
 from petroknowledge import (
     config,
@@ -48,6 +51,34 @@ WORD = re.compile(r"\w+")
 def channel(url: str, own_hosts: list[str]) -> str:
     """The channel searching a source: the company's own sites, or guidance."""
     return "company" if sources.is_allowed(url, own_hosts) else "guidance"
+
+
+def page_title(saved: dict[str, Any], listed: list[units.Unit]) -> str:
+    """The title a page is indexed under: its own, or, for a unit's page whose title
+    does not name the unit ("HISTORICAL ACTIVITIES" for NEPL's), the unit's name
+    with its acronym (K29 F2), so search and the answer request know its subject."""
+    for unit in listed:
+        if unit["url"] == saved["url"] and not units.naming([unit])(saved["title"]):
+            return units.described([unit])
+    return str(saved["title"])
+
+
+def pdf_date(path: Path) -> str:
+    """A PDF's creation date from its own metadata (ISO date), or "" when it gives
+    none or one that is not a real date. It dates the file, not its publication."""
+    document = pypdfium2.PdfDocument(str(path))
+    try:
+        created = document.get_metadata_dict().get("CreationDate", "")
+    finally:
+        document.close()
+    found = re.match(r"D:(\d{4})(\d{2})(\d{2})", created)
+    if found is None:
+        return ""
+    try:
+        day = date(int(found[1]), int(found[2]), int(found[3]))
+    except ValueError:
+        return ""
+    return day.isoformat() if day.year >= 1990 else ""
 
 
 def file_title(url: str) -> str:
@@ -193,6 +224,7 @@ def build(
     for entry in fetch.read_manifest():
         if entry.get("company") == company_id and "sha256" in entry:
             records[entry["sha256"]] = entry
+    listed = listed_units(company_id)
     rows: list[Row] = []
     documents: list[dict[str, str]] = []
     # A file collected from several addresses is indexed under one of them; its
@@ -202,8 +234,9 @@ def build(
         record = records.get(saved["sha256"])
         if record is None:
             continue
-        rows += web_rows(saved, own)
-        documents.append(source(record, saved["title"]))
+        titled = saved | {"title": page_title(saved, listed)}
+        rows += web_rows(titled, own)
+        documents.append(source(record, titled["title"]))
     if compiled_units:
         rows += compiled_rows(company_id, own)
     for reading in saved_json(config.READINGS):
@@ -218,7 +251,8 @@ def build(
         scanned = set(transcribe.scanned_pages(reading))
         kept = [e for e in reading["elements"] if e["page"] not in scanned]
         rows += document_rows(kept, record["url"], kind, own)
-        documents.append(source(record, file_title(record["url"])))
+        dated = "" if sheet else pdf_date(config.FILE_STORE / record["sha256"])
+        documents.append(source(record, file_title(record["url"]), dated))
         for address in reading["urls"]:
             filed[address] = record["url"]
     for transcript in saved_json(config.TRANSCRIPTS):
@@ -250,25 +284,41 @@ def units_capture(
 
 
 def listed_units(company_id: str) -> list[units.Unit]:
-    """The units a company's units page lists (`units.listed`); none for a company
+    """The units a company's units page lists (`units.listed`), each with the former
+    names its own page gives it (`units.former_names`, K29 F2); none for a company
     without a units page."""
     capture = units_capture(company_id)
     if capture is None:
         return []
     page, raw, reading = capture
-    return units.listed(raw, page["url"], reading["elements"], page["section"])
+    found = units.listed(raw, page["url"], reading["elements"], page["section"])
+    pages = {saved["url"]: saved for saved in saved_json(config.PAGE_READINGS)}
+    for unit in found:
+        own = pages.get(unit["url"], {"elements": []})
+        text = "\n".join(element["text"] for element in own["elements"])
+        unit["aliases"] = "; ".join(units.former_names(text, unit))
+    return found
+
+
+def listed_groups(company_id: str) -> list[units.Group]:
+    """The units page's list by group (`units.grouped`); none for a company without a
+    units page."""
+    capture = units_capture(company_id)
+    if capture is None:
+        return []
+    page, raw, reading = capture
+    return units.grouped(raw, reading["elements"], page["section"])
 
 
 def compiled_rows(company_id: str, own_hosts: list[str]) -> list[Row]:
     """The units page's whole list as one compiled passage, by group (K27); none for
     a company without a units page or a list on it."""
-    capture = units_capture(company_id)
-    if capture is None:
-        return []
-    page, raw, reading = capture
-    groups = units.grouped(raw, reading["elements"], page["section"])
+    groups = listed_groups(company_id)
     if not groups:
         return []
+    capture = units_capture(company_id)
+    assert capture is not None  # a list was read from it
+    page, _, reading = capture
     return [{
         "url": reading["url"], "title": reading["title"], "heading": units.COMPILED,
         "text": units.compiled_text(page["section"], groups),
@@ -278,7 +328,8 @@ def compiled_rows(company_id: str, own_hosts: list[str]) -> list[Row]:
     }]  # fmt: skip
 
 
-def source(record: dict[str, Any], title: str) -> dict[str, str]:
-    """A collected file as the index records it."""
+def source(record: dict[str, Any], title: str, file_date: str = "") -> dict[str, str]:
+    """A collected file as the index records it, with its file's own date if it
+    gives one (`pdf_date`, K29 F1)."""
     return {"url": record["url"], "title": title, "fetched_at": record["fetched_at"],
-            "sha256": record["sha256"]}  # fmt: skip
+            "sha256": record["sha256"], "file_date": file_date}  # fmt: skip

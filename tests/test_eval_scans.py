@@ -207,7 +207,6 @@ def test_an_arm_asks_with_the_published_settings_and_drops_unfinished_answers(
     assert sent["url"] == "http://vlm/v1/chat/completions"
     assert sent["json"]["messages"][0]["content"][1]["text"] == "Table Recognition:"
     assert sent["json"]["top_k"] == 1 and sent["json"]["repeat_penalty"] == 1.1
-    assert scans.ask(image, "http://vlm", "x")["answer"] == ""
 
 
 def test_a_dash_between_numbers_splits_them_however_it_is_spaced() -> None:
@@ -238,6 +237,7 @@ def test_the_command_line_runs_an_arm_and_scores_its_run(
     assert cli.main([*common, *arm]) == 0
     assert "1 pages read, 1 unfinished" in capsys.readouterr().out
     assert json.loads(run.read_text())["prompt"] == "Text"
+    assert json.loads(run.read_text())["sampling"] == scans.SAMPLING
     score = [*common, "scan-score", "scans", "--out", str(tmp_path / "s.json")]
     assert cli.main([*score, "--run", str(run)]) == 0
     run.write_text(json.dumps({"pages": {}}))

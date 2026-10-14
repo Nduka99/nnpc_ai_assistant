@@ -95,9 +95,13 @@ HEALTH_TIMEOUT_SECONDS = 2.0
 # The index (Lime Green's measured settings, plan §A). A passage holds at most this
 # many characters: a PDF page's sections or a web page's sections packed together.
 MAX_PASSAGE_CHARS = 1500
-CANDIDATES_PER_METHOD = 20  # keyword and vector candidates before fusion
+# Keyword and vector candidates before fusion, and fused candidates the reranker
+# orders (K29 F3): with 20, the current units list, at vector rank 13-55 and with no
+# keyword hit, never reached the reranker, which ranks it first when it does.
+# Practitioners rerank 50-100.
+CANDIDATES_PER_METHOD = 50
 RRF_K = 60  # the standard reciprocal-rank-fusion constant
-RERANK_CANDIDATES = 20
+RERANK_CANDIDATES = 50
 TOP_K = 8
 # The answer path (Lime Green's measured settings). The model returns at most
 # MAX_CLAIMS claims of at most MAX_QUOTES_PER_CLAIM quotes each.
@@ -141,6 +145,12 @@ DATABASE_CONNECT_TIMEOUT_SECONDS = 5
 # An index version to serve in place of the live one, so a candidate can be evaluated
 # before it goes live. Unset, the live version is served.
 INDEX_VERSION = os.environ.get("PETROKNOWLEDGE_INDEX_VERSION", "")
+# The grounding check removes the claims its judge finds unsupported (K28): "figures"
+# judges only claims stating a figure (K32, chosen by measurement: it kept the judge's
+# catches of substituted figures and gave back a third of the refusals), "remove" every
+# claim, and "record" keeps every claim, for an evaluation run: the verdicts are
+# recorded either way, so one run gives every arm, the removals applied offline.
+GROUNDING = os.environ.get("PETROKNOWLEDGE_GROUNDING", "figures")
 
 # The API (`petroknowledge serve`), on this machine only. Lime Green's app uses 8090,
 # so this port keeps the two projects independent (D07).

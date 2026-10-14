@@ -264,9 +264,65 @@ test("at 400% zoom the question box scrolls with the page (WCAG 1.4.10)", async 
   const position = await page
     .locator(".composer-bar")
     .evaluate((bar) => getComputedStyle(bar).position);
-  expect(position).toBe("static");
+  // Not sticky: it scrolls with the page (relative, so the guide stays anchored).
+  expect(position).not.toBe("sticky");
   const overflow = await page.evaluate(
     () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+for (const [colorScheme, width] of [
+  ["light", 1280],
+  ["light", 375],
+  ["dark", 1280],
+  ["dark", 375],
+] as const) {
+  test(`How to ask opens over the conversation, accessible in ${colorScheme} at ${width} px`, async ({
+    page,
+  }, info) => {
+    await page.setViewportSize({ width, height: 800 });
+    await page.emulateMedia({ colorScheme });
+    await answerWith(page, [sse(recorded(1))]);
+    await page.goto("/");
+    await ask(page, "What profit did NNPC make in 2025?");
+    await expect(page.getByRole("link", { name: "Source 1" })).toBeVisible();
+
+    const toggle = page.getByRole("button", { name: "How to ask" });
+    await toggle.click();
+    const guide = page.getByRole("region", { name: "How to ask" });
+    await expect(guide).toBeVisible();
+    await expect(guide.getByRole("heading", { name: "How to ask" })).toBeFocused();
+    // The whole guide is within the screen, above the question box.
+    const box = await guide.boundingBox();
+    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+    await expectAccessible(page);
+    await page.screenshot({
+      path: info.outputPath(`guide-${colorScheme}-${width}.png`),
+    });
+
+    // Moving back out of the guide lands on the conversation's last control, which
+    // must not be hidden behind the open guide (WCAG 2.4.11).
+    await page.keyboard.press("Shift+Tab");
+    const covered = await page.evaluate(() => {
+      const focused = document.activeElement as HTMLElement;
+      const rect = focused.getBoundingClientRect();
+      const hit = document.elementFromPoint(
+        rect.left + rect.width / 2,
+        rect.top + rect.height / 2,
+      );
+      return hit === null || !focused.contains(hit);
+    });
+    expect(covered).toBe(false);
+    await guide.getByRole("button", { name: "Close" }).focus();
+
+    await page.keyboard.press("Escape");
+    await expect(guide).toBeHidden();
+    await expect(toggle).toBeFocused();
+    await expect(page.getByRole("link", { name: "Source 1" })).toBeVisible();
+  });
+}

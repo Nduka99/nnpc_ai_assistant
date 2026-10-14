@@ -43,12 +43,16 @@ from evaluation import (
     pdfpages,
     pictures,
     replay,
+    rescore,
     runs,
     scans,
     sets,
     sheetvalues,
     webpages,
 )
+
+# Runs whose answers stay unread until the release run (K29's breach, K31).
+SEALED_RUNS = ("nnpc-wording-check-v1", "heldout")
 
 
 def read_json(path: Path) -> Any:
@@ -492,6 +496,38 @@ def run_replay(args: argparse.Namespace) -> int:
     return 0
 
 
+def run_rescore(args: argparse.Namespace) -> int:
+    """A run's recorded replies checked again by today's post-generation checks
+    (K31): the judge's recorded verdicts (asking the live judge only for statements
+    never judged), the live judge for every statement, or no judge, on every claim or
+    on figure claims only (`--grounding`, K32); the earlier-holder check with an index
+    version's roles if given. Removals are applied, as served."""
+    if any(name in str(args.run) for name in SEALED_RUNS) and not args.release:
+        raise ValueError(f"{args.run} is sealed until the release run (--release)")
+    from petroknowledge import assistant, config, llm
+
+    config.GROUNDING = args.grounding  # the judge's removals applied, as served
+    judges = {
+        "recorded": lambda verdicts: rescore.recorded(verdicts, llm.judge),
+        "live": lambda verdicts: llm.judge,
+        "none": lambda verdicts: rescore.supporting,
+    }
+    with assistant.connect() as conn:
+        stale = None
+        if args.stale_version is not None:
+            stale = assistant.stale_check(conn, args.stale_version)
+        entries = []
+        for entry in read_json(args.run):
+            recorded = rescore.recorded_answer(conn, entry)
+            entries.append(
+                rescore.rescored(entry, *recorded, judges[args.judge], stale)
+            )
+    write_json(args.out, entries)
+    answered = sum(e["shown"]["status"] == "answered" for e in entries)
+    print(f"{len(entries)} answers rescored ({answered} answered) in {args.out}")
+    return 0
+
+
 def run_grading_items(args: argparse.Namespace) -> int:
     """Write a run's answers as items for a grader (`briefs/grading-guide.md`)."""
     if "heldout" in args.name and not args.release:
@@ -700,6 +736,22 @@ def parser() -> argparse.ArgumentParser:
     replayed.add_argument(
         "--release", action="store_true", help="unseal a held-out set"
     )
+    rescored = commands.add_parser(
+        "rescore", help="a run's recorded replies checked again (K31)"
+    )
+    rescored.add_argument("--run", type=Path, required=True, help="the run file")
+    rescored.add_argument("--out", type=Path, required=True)
+    rescored.add_argument(
+        "--judge", choices=("recorded", "live", "none"), default="recorded"
+    )
+    rescored.add_argument(
+        "--grounding", choices=("remove", "figures"), default="remove",
+        help="the judge on every claim, or on figure claims only (K32)",
+    )  # fmt: skip
+    rescored.add_argument(
+        "--stale-version", type=int, help="earlier-holder check with these roles"
+    )
+    rescored.add_argument("--release", action="store_true", help="unseal a sealed run")
     reach = commands.add_parser(
         "reach", help="status agreement and evidence reach of a run"
     )
@@ -714,7 +766,7 @@ def parser() -> argparse.ArgumentParser:
     items.add_argument("--out", type=Path, required=True)
     items.add_argument("--release", action="store_true", help="unseal a held-out set")
     second = commands.add_parser(
-        "second-sample", help="the items a second grader grades (30% plus disputes)"
+        "second-sample", help="the items a second grader grades (30%% plus disputes)"
     )
     second.add_argument("name")
     second.add_argument("--file", required=True, help="the key file in the set")
@@ -784,6 +836,8 @@ def main(argv: list[str] | None = None) -> int:
             return run_ask_keys(args)
         if args.command == "replay":
             return run_replay(args)
+        if args.command == "rescore":
+            return run_rescore(args)
         if args.command == "reach":
             return run_reach(args)
         if args.command == "grading-items":

@@ -313,7 +313,8 @@ def pg(postgres_url: str) -> Iterator[store.Connection]:
         conn.rollback()
         conn.execute(
             "TRUNCATE answer_feedback, question_failures, model_calls, answers, "
-            "conversations, unit_passages, units, role_statements, role_readings, "
+            "conversations, structure, unit_passages, units, role_statements, "
+            "role_readings, "
             "passages, index_versions, documents, images RESTART IDENTITY"
         )
         # Each index version has its own BM25 indexes; the next test starts at 1.

@@ -3,6 +3,7 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 import { askStream, type StreamEvent } from "../lib/api";
 import { loadThread, saveThread, type SavedThread } from "../lib/saved";
 import { announcement, settled, type Outcome, type TurnState } from "../lib/thread";
+import AskingGuide from "./AskingGuide.vue";
 import LineIcon from "./LineIcon.vue";
 import QuestionComposer from "./QuestionComposer.vue";
 import ThreadTurn from "./ThreadTurn.vue";
@@ -14,11 +15,16 @@ import ThreadTurn from "./ThreadTurn.vue";
 const props = defineProps<{ ask?: typeof askStream }>();
 const ask = props.ask ?? askStream;
 
-const EXAMPLES = [
-  "Who is NNPC's Group Chief Executive Officer?",
-  "What does NNPC Shipping do?",
-  "What is NETCO trying to achieve through its schools outreach programme?",
-];
+// Starter questions (K33): questions written for NNPC managers that the assistant
+// answered soundly, kept in their tested wording.
+const STARTERS = [
+  "Give me the headline figures from our latest audited results: profit, revenue, dividend, and daily oil and gas production.",
+  "Who is listed as NGIC's managing director, and what is that company responsible for?",
+  "Under the PIA, who regulates upstream, and who regulates midstream and downstream?",
+  "What gas products does NGML offer?",
+  "Who joined NNPC Shipping in the tanker venture announced in February 2025?",
+  "Who holds the government's shares in NNPC Limited under the PIA?",
+] as const;
 // The same words as the command line's (view.INDEPENDENT, K02).
 const INDEPENDENT =
   "Independent research prototype, not affiliated with or endorsed by NNPC Limited. Answers quote public documents; check the linked source before relying on one.";
@@ -32,6 +38,10 @@ const busy = ref(false);
 const cleared = ref<SavedThread | null>(null);
 const composer = ref<InstanceType<typeof QuestionComposer> | null>(null);
 const composerBar = ref<HTMLElement | null>(null);
+// How to ask (K33): open over the conversation, from the question box's toggle or a
+// refusal's Tips for asking; closed by its toggle, Close, Esc or asking.
+const guideOpen = ref(false);
+const guide = ref<InstanceType<typeof AskingGuide> | null>(null);
 // What the status line says about the thread itself (cleared, restored) until the
 // next question; otherwise the latest turn's outcome (WCAG 4.1.3).
 const threadNews = ref("");
@@ -52,9 +62,30 @@ const resized = new ResizeObserver((entries) => {
     document.documentElement.style.setProperty("--composer-height", `${height}px`);
   }
 });
-// Esc stops an answer on its way wherever focus is, not only in the question box.
+// Esc closes the guide if it is open; otherwise it stops an answer on its way,
+// wherever focus is, not only in the question box.
 function onEscape(event: KeyboardEvent): void {
-  if (event.key === "Escape" && busy.value) onStop();
+  if (event.key !== "Escape") return;
+  if (guideOpen.value) closeGuide();
+  else if (busy.value) onStop();
+}
+
+/** Open the guide and move focus to its heading, so it is read from the start. */
+async function openGuide(): Promise<void> {
+  guideOpen.value = true;
+  await nextTick();
+  guide.value?.focus();
+}
+
+/** Close the guide; focus returns to its toggle, where the reader can reopen it. */
+function closeGuide(): void {
+  guideOpen.value = false;
+  composer.value?.focusGuide();
+}
+
+function toggleGuide(): void {
+  if (guideOpen.value) closeGuide();
+  else void openGuide();
 }
 onMounted(() => {
   resized.observe(composerBar.value as HTMLElement);
@@ -86,6 +117,8 @@ async function onAsk(question: string): Promise<void> {
   if (busy.value) return;
   cleared.value = null;
   threadNews.value = "";
+  // Asking closes the guide, so the answer is not hidden under it.
+  guideOpen.value = false;
   const key = (turns.value.at(-1)?.key ?? 0) + 1;
   turns.value = [...turns.value, { key, question, stages: [] }];
   busy.value = true;
@@ -191,8 +224,11 @@ function onUndo(): void {
           the sources do not say, the assistant says so. Questions are recorded to
           improve the assistant, so leave out personal details.
         </p>
+        <p>
+          Tips for getting good answers are under How to ask, beside the question box.
+        </p>
         <ul class="examples" aria-label="Example questions">
-          <li v-for="example in EXAMPLES" :key="example">
+          <li v-for="example in STARTERS" :key="example">
             <button type="button" class="example" @click="onExample(example)">
               {{ example }}
             </button>
@@ -206,12 +242,27 @@ function onUndo(): void {
           :turn="turn"
           @new-conversation="onNewConversation"
           @retry="onRetry"
+          @guide="openGuide"
         />
       </template>
       <p class="visually-hidden" role="status">{{ spoken }}</p>
     </main>
     <div ref="composerBar" class="composer-bar">
-      <QuestionComposer ref="composer" :busy="busy" @ask="onAsk" @stop="onStop" />
+      <AskingGuide
+        v-if="guideOpen"
+        ref="guide"
+        :starters="STARTERS"
+        @close="closeGuide"
+        @ask="onExample"
+      />
+      <QuestionComposer
+        ref="composer"
+        :busy="busy"
+        :guide-open="guideOpen"
+        @ask="onAsk"
+        @stop="onStop"
+        @guide="toggleGuide"
+      />
     </div>
     <footer class="notice-footer">
       <p>

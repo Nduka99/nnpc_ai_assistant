@@ -32,6 +32,8 @@ ROWS = [
         channel="picture", image=PICTURE),
 ]  # fmt: skip
 UNITS = [{"name": "Acme Refining Limited", "acronym": "", "url": SITE + "about"}]
+GROUPS = [{"name": "Downstream", "words": [],
+           "entries": ["Acme Refining Limited", "Acme Shipping"]}]  # fmt: skip
 
 
 @pytest.fixture
@@ -40,6 +42,7 @@ def corpus_built(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> list[list[s
     embedding request's texts."""
     monkeypatch.setattr(corpus, "build", lambda company_id, compiled: (ROWS, DOCUMENTS))
     monkeypatch.setattr(corpus, "listed_units", lambda company_id: UNITS)
+    monkeypatch.setattr(corpus, "listed_groups", lambda company_id: GROUPS)
     monkeypatch.setattr(config, "IMAGES", tmp_path)
     (tmp_path / f"{PICTURE}.png").write_bytes(b"png")
     vectors = {PICTURE: [1.0] + [0.0] * 1151, "d" * 64: [0.0, 1.0]}
@@ -75,6 +78,12 @@ def test_a_build_embeds_each_new_passage_once_and_stores_its_pictures(
     scope = pg.execute("SELECT count(*) FROM unit_passages WHERE unit_id = %s",
                        (unit["id"],)).fetchone()  # fmt: skip
     assert scope == (3,)  # every passage of the unit's own page
+    assert store.version_structure(pg, first) == [
+        {"name": "Downstream", "entries": ["Acme Refining Limited", "Acme Shipping"]}
+    ]
+    linked = pg.execute("SELECT member, unit_id FROM structure ORDER BY position")
+    assert linked.fetchall() == [("Acme Refining Limited", unit["id"]),
+                                 ("Acme Shipping", None)]  # fmt: skip
     assert store.live_version(pg) is None
     assert store.picture_ranking(pg, first, [1.0] + [0.0] * 1151, 5) != []
 
@@ -151,6 +160,7 @@ def test_role_statements_are_read_once_per_text_and_dated(
         corpus, "build", lambda company_id, compiled: ([board], DOCUMENTS)
     )
     monkeypatch.setattr(corpus, "listed_units", lambda company_id: [])
+    monkeypatch.setattr(corpus, "listed_groups", lambda company_id: [])
     monkeypatch.setattr(config, "IMAGES", tmp_path)
     said = {"person": "Ada Obi", "role": "Chief Executive Officer",
             "organisation": "Acme",

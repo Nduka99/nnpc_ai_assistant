@@ -108,10 +108,26 @@ def role_statements(
         for statement in known[key]:
             stated_on = published.isoformat() if published else captured
             kind = "published" if published else "captured"
-            found.append(dict(statement) | {"passage_id": passage_id,
-                                             "stated_on": stated_on,
-                                             "date_kind": kind})  # fmt: skip
+            named = roles.as_named(statement, f"{title}\n{text}")
+            found.append(named | {"passage_id": passage_id,
+                                  "stated_on": stated_on,
+                                  "date_kind": kind})  # fmt: skip
     return found, counts
+
+
+def structure_rows(
+    company_id: str, listed: list[units.Unit], unit_ids: list[int]
+) -> list[tuple[str, str, int | None]]:
+    """The units page's groups as structure edges (K30 G1): (group, member, unit id),
+    a member linked to the unit it names, if any."""
+    named = units.naming(listed)
+    rows = []
+    for group in corpus.listed_groups(company_id):
+        for member in group["entries"]:
+            places = named(member)
+            unit_id = unit_ids[places[0]] if places else None
+            rows.append((group["name"], member, unit_id))
+    return rows
 
 
 def build(
@@ -149,7 +165,8 @@ def build(
         conn, documents, rows, vectors, manifest, pngs, picture_vectors
     )
     scope = units.members(listed, store.passage_texts(conn, version))
-    store.write_units(conn, version, listed, scope)
+    unit_ids = store.write_units(conn, version, listed, scope)
+    store.write_structure(conn, version, structure_rows(company_id, listed, unit_ids))
     statements, counts = role_statements(conn, version, chat)
     store.write_role_statements(conn, version, statements)
     manifest |= {"role_statements": str(len(statements))}

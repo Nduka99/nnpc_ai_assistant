@@ -12,6 +12,8 @@ import NoticeText from "./NoticeText.vue";
 // from its page, which it says), then where it is (page, dates) and which document. A link off the sources' hosts is shown as plain text;
 // every source link opens in a new tab, so the thread stays where it is.
 const props = defineProps<{ recorded: RecordedAnswer }>();
+// A refusal offers the How to ask guide as its next step (K33, Nielsen 9).
+const emit = defineEmits<{ guide: [] }>();
 
 const answer = computed(() => props.recorded.answer);
 const turn = computed(() => props.recorded.turn);
@@ -117,6 +119,13 @@ function anchor(number: number): string {
       </li>
     </ul>
     <NoticeText v-if="answer.notice" :text="answer.notice" />
+    <p v-if="answer.status === 'insufficient_evidence'" class="next-step">
+      Asking another way can help.
+      <button type="button" class="button" @click="emit('guide')">
+        <LineIcon name="guide" />
+        Tips for asking
+      </button>
+    </p>
     <section v-if="sources.length > 0" class="sources" aria-label="Sources">
       <h3 class="section-heading">Sources</h3>
       <ol>
