@@ -4,16 +4,16 @@ Each source keeps the form the Lime Green assistant measured: a PDF's or a
 spreadsheet's pages as page-sized passages with their tables inline (X9's `page`
 form), a web page's sections packed into passages with the first section's path as
 context (X42 W3's `page` form). A scanned page's transcript becomes passages that
-search can find but an answer never quotes (K12). Each picture becomes one passage
+search can find but an answer never quotes. Each picture becomes one passage
 in the `picture` channel (X43 B); the text read in it is context only, because that
-reading failed its gate (K16, pictures-v1).
+reading failed its gate (pictures-v1).
 
 A passage is a plain record (`Row`): where it comes from, what it says, its context
 (searched, never quoted), which channel searches it, whether it may be quoted and
 the picture it shows. The company's own sites and files form the `company` channel;
 regulators and reference works (NUPRC, Wikipedia, the EIA) the `guidance` channel
 (Lime Green ADR 0030). On request, the units page's whole list is also compiled into
-one passage (K27, which failed its first gate, so it is off by default).
+one passage (off by default: it failed its first gate).
 """
 
 import json
@@ -56,7 +56,7 @@ def channel(url: str, own_hosts: list[str]) -> str:
 def page_title(saved: dict[str, Any], listed: list[units.Unit]) -> str:
     """The title a page is indexed under: its own, or, for a unit's page whose title
     does not name the unit ("HISTORICAL ACTIVITIES" for NEPL's), the unit's name
-    with its acronym (K29 F2), so search and the answer request know its subject."""
+    with its acronym, so search and the answer request know its subject."""
     for unit in listed:
         if unit["url"] == saved["url"] and not units.naming([unit])(saved["title"]):
             return units.described([unit])
@@ -126,7 +126,7 @@ def transcript_rows(
     transcript: dict[str, Any], url: str, own_hosts: list[str]
 ) -> list[Row]:
     """A scanned document's transcribed pages as passages search can find and an
-    answer never quotes (K12): no transcription passed its gate."""
+    answer never quotes: no transcription passed its gate."""
     found = [asdict(element) for element in transcribe.transcript_elements(transcript)]
     return document_rows(found, url, "scan", own_hosts) if found else []
 
@@ -285,7 +285,7 @@ def units_capture(
 
 def listed_units(company_id: str) -> list[units.Unit]:
     """The units a company's units page lists (`units.listed`), each with the former
-    names its own page gives it (`units.former_names`, K29 F2); none for a company
+    names its own page gives it (`units.former_names`); none for a company
     without a units page."""
     capture = units_capture(company_id)
     if capture is None:
@@ -311,7 +311,7 @@ def listed_groups(company_id: str) -> list[units.Group]:
 
 
 def compiled_rows(company_id: str, own_hosts: list[str]) -> list[Row]:
-    """The units page's whole list as one compiled passage, by group (K27); none for
+    """The units page's whole list as one compiled passage, by group; none for
     a company without a units page or a list on it."""
     groups = listed_groups(company_id)
     if not groups:
@@ -330,6 +330,6 @@ def compiled_rows(company_id: str, own_hosts: list[str]) -> list[Row]:
 
 def source(record: dict[str, Any], title: str, file_date: str = "") -> dict[str, str]:
     """A collected file as the index records it, with its file's own date if it
-    gives one (`pdf_date`, K29 F1)."""
+    gives one (`pdf_date`)."""
     return {"url": record["url"], "title": title, "fetched_at": record["fetched_at"],
             "sha256": record["sha256"], "file_date": file_date}  # fmt: skip

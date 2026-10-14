@@ -50,7 +50,8 @@ CREATE TABLE passages (
     page integer CHECK (page > 0),     -- a document passage's page
     kind text NOT NULL CHECK (kind IN ('page', 'post', 'pdf', 'sheet', 'scan', 'picture')),
     channel text NOT NULL CHECK (channel IN ('company', 'guidance', 'picture')),
-    -- A scanned page's transcript is searched but never quoted (K12).
+    -- A scanned page's transcript is searched but never quoted: no transcription
+    -- passed its accuracy gate.
     quotable boolean NOT NULL DEFAULT true,
     published date,               -- a post's publication date
     image text REFERENCES images (id),

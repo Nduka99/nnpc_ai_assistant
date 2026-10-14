@@ -169,7 +169,7 @@ def chat(system: str, user: str, schema: dict[str, Any]) -> object:
 
 
 def judge(system: str, user: str, schema: dict[str, Any]) -> object:
-    """The same request to the judging server (K28)."""
+    """The same request to the judging server."""
     return chat_at(config.JUDGE_URL, "judging", system, user, schema)
 
 

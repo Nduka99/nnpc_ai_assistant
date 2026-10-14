@@ -1,4 +1,4 @@
--- The company's structure as its own units page lists it (K30 G1): each group's
+-- The company's structure as its own units page lists it: each group's
 -- members in the page's order, linked to the unit where the member is one. With the
 -- units, their former names and the dated role statements, it is the graph the
 -- answer path is told and checks claims against.

@@ -28,7 +28,7 @@ MEASUREMENTS = Path("data/measurements")
 INBOX = Path("data/inbox")
 
 # Contact details are required by Wikimedia's User-Agent policy and are good manners
-# for every host: the project owner's public GitHub profile, no email.
+# for every host: the maintainer's public GitHub profile, no email.
 USER_AGENT = (
     "petroknowledge/0.1 (https://github.com/Nduka99; independent research prototype)"
 )
@@ -76,7 +76,7 @@ CHAT_URL = os.environ.get(
 )
 # The generator keeps its expert layers in system RAM, so an answer can take a while.
 CHAT_TIMEOUT_SECONDS = 300.0
-# The grounding check's judge (K28): a model of another family than the generator, so
+# The grounding check's judge: a model of another family than the generator, so
 # the claims are not judged by the model that wrote them.
 JUDGE_URL = os.environ.get(
     "PETROKNOWLEDGE_JUDGE_URL", "http://127.0.0.1:8085/v1/chat/completions"
@@ -86,17 +86,17 @@ TEMPERATURE = 0.0
 SEED = 42
 # A reused prompt cache changes the batch sizes a prompt is computed in, and the
 # logits are then not bit-for-bit identical (llama.cpp server README), so the same
-# request could get a different answer. Every request is computed whole (K28).
+# request could get a different answer. Every request is computed whole.
 CACHE_PROMPT = False
 MAX_ANSWER_TOKENS = 2048
 # A model server's /health answers at once when its model is loaded.
 HEALTH_TIMEOUT_SECONDS = 2.0
 
-# The index (Lime Green's measured settings, plan §A). A passage holds at most this
+# The index (Lime Green's measured settings). A passage holds at most this
 # many characters: a PDF page's sections or a web page's sections packed together.
 MAX_PASSAGE_CHARS = 1500
 # Keyword and vector candidates before fusion, and fused candidates the reranker
-# orders (K29 F3): with 20, the current units list, at vector rank 13-55 and with no
+# orders: with 20, the current units list, at vector rank 13-55 and with no
 # keyword hit, never reached the reranker, which ranks it first when it does.
 # Practitioners rerank 50-100.
 CANDIDATES_PER_METHOD = 50
@@ -119,11 +119,11 @@ PASSAGE_BUDGET = 32
 MAX_ITEMS = 6
 ITEM_TOP = 4
 # After each search, a search inside the units the user's words name adds its best
-# SCOPED_TOP passages, within the budget (K23, Lime Green E5 B4).
+# SCOPED_TOP passages, within the budget (Lime Green E5 B4).
 SCOPED_TOP = 4
 MAX_PICTURES = 4  # picture passages added to an answer, at most (Lime Green X43 B4)
 CLOSEST_PAGES = 3  # pages listed with the insufficient-evidence text
-# Search channels (ADR 0008, Lime Green X44 F2): pictures and guidance are ranked
+# Search channels (Lime Green X44 F2): pictures and guidance are ranked
 # apart and added after the company's places, never in them. Each search adds its
 # best PICTURES_PER_SEARCH pictures by their words and by what they show, and up to
 # GUIDANCE_PER_SEARCH guidance passages the reranker puts above the company's last.
@@ -145,8 +145,8 @@ DATABASE_CONNECT_TIMEOUT_SECONDS = 5
 # An index version to serve in place of the live one, so a candidate can be evaluated
 # before it goes live. Unset, the live version is served.
 INDEX_VERSION = os.environ.get("PETROKNOWLEDGE_INDEX_VERSION", "")
-# The grounding check removes the claims its judge finds unsupported (K28): "figures"
-# judges only claims stating a figure (K32, chosen by measurement: it kept the judge's
+# The grounding check removes the claims its judge finds unsupported: "figures"
+# judges only claims stating a figure (chosen by measurement: it kept the judge's
 # catches of substituted figures and gave back a third of the refusals), "remove" every
 # claim, and "record" keeps every claim, for an evaluation run: the verdicts are
 # recorded either way, so one run gives every arm, the removals applied offline.
@@ -156,14 +156,14 @@ GROUNDING = os.environ.get("PETROKNOWLEDGE_GROUNDING", "figures")
 # so this port keeps the two projects independent (D07).
 APP_HOST = "127.0.0.1"
 APP_PORT = 8091
-# The web app's build (ADR 0010, `npm run build` in web/), served by the API.
+# The web app's build (`npm run build` in web/), served by the API.
 WEB_DIST = Path("web/.output/public")
 # The API refuses longer questions (OWASP LLM10, unbounded consumption). The longest
 # question in the development and scope sets is 152 characters.
 MAX_QUESTION_CHARS = 1000
-MAX_FEEDBACK_CHARS = 1000  # a reader's comment on an answer (K28)
+MAX_FEEDBACK_CHARS = 1000  # a reader's comment on an answer
 # At most as many answers at once as the generator has slots; a few more wait in
-# line, and one client may ask a few questions a minute (K28).
+# line, and one client may ask a few questions a minute.
 ANSWERS_AT_ONCE = 2
 QUEUE_LENGTH = 6
 QUESTIONS_PER_MINUTE = 10

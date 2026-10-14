@@ -1,4 +1,4 @@
-"""Born-digital PDFs read with Docling into elements (PLAN §0f, experiment X8).
+"""Born-digital PDFs read with Docling into elements (Lime Green X8).
 
 Docling's standard pipeline takes each page's own characters from the PDF, finds
 the layout (headings, text, lists, tables, pictures) and rebuilds each table's

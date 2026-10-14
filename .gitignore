@@ -2,7 +2,7 @@
 # .git/info/exclude, which never ships)
 .env
 .venv/
-# Collected corpus, index inputs and runs: never published (K02)
+# Collected corpus, index inputs and runs: never published
 data/
 artifacts/
 models/

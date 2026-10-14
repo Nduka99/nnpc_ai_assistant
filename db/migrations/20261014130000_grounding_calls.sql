@@ -1,4 +1,4 @@
--- The grounding check's requests (K28) are model calls too: one per verified claim,
+-- The grounding check's requests are model calls too: one per verified claim,
 -- kept with the answer like the others.
 
 -- migrate:up

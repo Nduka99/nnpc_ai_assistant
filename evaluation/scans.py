@@ -1,5 +1,5 @@
 """Scanned pages' transcriptions scored against truth written from the page images
-(K12's gate; Lime Green's X8 transcription check, with numbers added).
+(the transcription gate; Lime Green's X8 transcription check, with numbers added).
 
 A set's `strata.json`, written before the draw, names the documents in each stratum
 and the pages already seen (their transcriptions were read), which are left out. A

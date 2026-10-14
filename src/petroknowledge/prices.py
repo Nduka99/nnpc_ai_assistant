@@ -1,4 +1,4 @@
-"""Per-unit prices are never stated from the index (plan §8: prices redesigned).
+"""Per-unit prices are never stated from the index.
 
 A pump price or a crude price changes often, so one read from a stored page can be
 stale: Lime Green once quoted a sample's price for an unrelated product (its X16).

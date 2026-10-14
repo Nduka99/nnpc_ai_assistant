@@ -28,12 +28,12 @@ class Passage:
     # is the picture's own words (X43). Empty for every other passage.
     image: str = ""
     # Whether an answer may quote it. A scanned page's transcript helps search find
-    # the page but is never quoted: no transcription passed its gate (K12).
+    # the page but is never quoted: no transcription passed its gate.
     quotable: bool = True
     # A post's publication date (ISO 8601), else empty: shown by the application, so
     # the model never has to write a date its quotes do not hold.
     published: str = ""
-    # Who it comes from (K29 F1): "company" for the company's own sites, "guidance"
+    # Who it comes from: "company" for the company's own sites, "guidance"
     # for third parties (encyclopedia, regulator, government), "picture" for a
     # picture; empty where unknown.
     channel: str = ""
@@ -80,7 +80,7 @@ class DraftClaim:
 
     text: str
     evidence: tuple[DraftEvidence, ...]
-    part: int = 1  # the number of the question part it answers (C2)
+    part: int = 1  # the number of the question part it answers (Lime Green S2b C2)
 
 
 @dataclass(frozen=True)
@@ -107,7 +107,7 @@ class Claim:
 
     text: str
     evidence: tuple[Evidence, ...]
-    part: int = 1  # the number of the question part it answers (C2)
+    part: int = 1  # the number of the question part it answers (Lime Green S2b C2)
 
 
 @dataclass(frozen=True)
@@ -132,5 +132,5 @@ class Answer:
     # follow-up; empty for a safety referral, which is never searched.
     understood: tuple[str, ...] = ()
     # Search-only matches (a scanned page's transcript, the words read in a picture):
-    # pages the reader may open, never quoted (K12, K16).
+    # pages the reader may open, never quoted.
     pointers: tuple[Passage, ...] = ()

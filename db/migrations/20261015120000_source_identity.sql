@@ -1,4 +1,4 @@
--- What a source is and when it was written (K29). A document's file date is read
+-- What a source is and when it was written. A document's file date is read
 -- from its file's own metadata (a PDF's creation date): it dates a document whose
 -- publication date is unknown, and is shown to the answer request as "file dated",
 -- never as a publication date. A unit's former names are those its own page gives

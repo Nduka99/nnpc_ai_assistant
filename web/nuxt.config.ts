@@ -1,4 +1,4 @@
-// A static single-page app (ADR 0010): `npm run build` writes .output/public, which
+// A static single-page app: `npm run build` writes .output/public, which
 // `petroknowledge serve` serves beside the API. `npm run dev` serves it on 3000 and
 // passes /api to a running `petroknowledge serve` (API_URL, default its port 8091).
 import { defineNuxtConfig } from "nuxt/config";

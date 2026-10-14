@@ -13,7 +13,7 @@ and the next request sends the id back. The server rebuilds the history from wha
 showed; a request carrying any other field, such as a history, is refused (Lime Green
 D60).
 
-Load (K28): at most as many answers are worked on at once as the generator has slots;
+Load: at most as many answers are worked on at once as the generator has slots;
 a few more wait in line, in order of arrival, and the stream says each one's place.
 Beyond that, or when one client asks too often, the request is refused with 429 before
 any turn is reserved. A reader can mark an answer helpful or not right, from the
@@ -51,7 +51,7 @@ from petroknowledge.view import AnswerView, view
 app = FastAPI(title="PetroKnowledge", docs_url=None, redoc_url=None, openapi_url=None)
 telemetry.instrument(app)
 logger = logging.getLogger(__name__)
-# The web app's build (ADR 0010). Without one no directory is served (below): Starlette
+# The web app's build. Without one no directory is served (below): Starlette
 # fails every request to a directory that does not exist. A new build needs a restart.
 BUILT = config.WEB_DIST if config.WEB_DIST.is_dir() else None
 INLINE_SCRIPT = re.compile(r"<script(?![^>]*\ssrc=)[^>]*>(.*?)</script>", re.DOTALL)
@@ -369,7 +369,7 @@ def stream_answer(
 
 @app.post("/api/v1/answers/{answer_id}/feedback", status_code=204)
 def give_feedback(answer_id: int, feedback: FeedbackRequest) -> Response:
-    """Keep a reader's judgement of an answer, from its own conversation (K28)."""
+    """Keep a reader's judgement of an answer, from its own conversation."""
     try:
         kept = assistant.record_feedback(
             answer_id, str(feedback.conversation_id), feedback.helpful, feedback.comment

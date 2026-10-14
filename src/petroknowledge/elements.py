@@ -1,4 +1,4 @@
-"""The element model every parser returns (PLAN §0f): one piece of a document, in
+"""The element model every parser returns: one piece of a document, in
 reading order, with where it sits and what kind of text it is.
 
 Everything after parsing (validation, passages, citations) reads only elements, so

@@ -3,7 +3,7 @@ import { nextTick, ref, useId } from "vue";
 import { sendFeedback } from "../lib/api";
 import LineIcon from "./LineIcon.vue";
 
-// A reader's judgement of one answer (K28): right, or not right with an optional
+// A reader's judgement of one answer: right, or not right with an optional
 // comment. It is kept with the answer for review and shown to nobody else. The
 // buttons are never disabled, so keyboard focus stays where the reader left it.
 const props = defineProps<{ answerId: number; conversationId: string }>();

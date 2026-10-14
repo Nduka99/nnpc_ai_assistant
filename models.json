@@ -114,6 +114,6 @@
   "bytes": 4233679008,
   "sha256": "81d4c5931c42f34789267445139dbdb196073760b99e11fbc7067fa2d2d7d629",
   "licence": "NVIDIA Open Model License",
-  "use": "grounding judge (K28)"
+  "use": "grounding judge"
  }
 ]

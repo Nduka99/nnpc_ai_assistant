@@ -1,4 +1,4 @@
-"""Offline rescoring: a run's recorded replies checked again (K31). Every passage,
+"""Offline rescoring: a run's recorded replies checked again. Every passage,
 reply and verdict here is invented."""
 
 import json

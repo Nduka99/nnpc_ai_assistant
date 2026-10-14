@@ -88,7 +88,7 @@ def group_row(line: str) -> bool:
 def whole_table(headers: list[str], rows: list[str]) -> list[str]:
     """A table as passages: its header lines, then its rows, split between rows
     when it is too long, each part starting with the header lines and, unless it
-    starts with a group row, the last group row before it (K29 F6): a part still
+    starts with a group row, the last group row before it: a part still
     says which group its rows are in. A part never ends with a group row: it moves
     to the next part, with its rows."""
     budget = config.MAX_PASSAGE_CHARS - len("\n".join(headers)) - 1

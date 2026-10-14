@@ -1,11 +1,11 @@
-"""Offline rescoring (K31): a run's recorded model replies checked again by today's
+"""Offline rescoring: a run's recorded model replies checked again by today's
 post-generation checks (`answer.checked`: verification, the grounding judge, the
 earlier-holder check), so a change to a check is measured in minutes instead of a
 two-hour run.
 
 Nothing is generated again: the understanding, the passages found and the answering
 replies are the ones each answer recorded (`model_calls`): the draft and, when one was
-asked, its repair (K31), applied only if the checks still leave a drafted part without
+asked, its repair, applied only if the checks still leave a drafted part without
 a claim. Only the grounding judge may be asked again. `recorded` answers a statement
 with the verdict recorded for it, and asks its fallback only for a statement never
 judged then (a claim verification now keeps); `supporting` is the arm without a judge.

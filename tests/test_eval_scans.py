@@ -1,4 +1,4 @@
-"""K12's gate: scanned pages drawn by seed, their transcriptions scored against truth
+"""Scan gate: scanned pages drawn by seed, their transcriptions scored against truth
 written from the page images. Every document, page and text here is invented."""
 
 import json

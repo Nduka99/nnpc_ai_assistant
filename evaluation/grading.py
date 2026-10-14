@@ -6,7 +6,7 @@ the answer was made: the grader judges what the reader was shown, by
 `briefs/grading-guide.md`. A conversation's turn comes with the turns before it, each
 with the reply its user saw, and its question rewritten to stand alone. Verdicts are
 counted per case type, and the wrong-answer rate's Wilson upper bound is compared with
-release bar R1 (plan §5).
+release bar R1 (at most 5% wrong among answered, at 95% confidence).
 """
 
 import random

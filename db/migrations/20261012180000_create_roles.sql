@@ -1,4 +1,4 @@
--- Dated roles (K24): who holds which role, as each dated passage states it, so code
+-- Dated roles: who holds which role, as each dated passage states it, so code
 -- can decide which statement is the latest. A passage's reading is kept by its text,
 -- across versions, so a later build or refresh reads only new passages.
 

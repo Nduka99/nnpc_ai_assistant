@@ -58,7 +58,7 @@ export interface paths {
     put?: never;
     /**
      * Give Feedback
-     * @description Keep a reader's judgement of an answer, from its own conversation (K28).
+     * @description Keep a reader's judgement of an answer, from its own conversation.
      */
     post: operations["give_feedback_api_v1_answers__answer_id__feedback_post"];
     delete?: never;

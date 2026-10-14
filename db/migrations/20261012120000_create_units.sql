@@ -1,6 +1,6 @@
--- Business units (K23): the units a company's own units page lists and links, and
+-- Business units: the units a company's own units page lists and links, and
 -- the passages in each unit's scope, kept per index version. The graph's first
--- entities (K15).
+-- entities.
 
 -- migrate:up
 CREATE TABLE units (

@@ -112,7 +112,7 @@ def run_acquire(
 
 def run_download_listed(company_id: str) -> None:
     """Download the files data/inbox/<company>-to-download.txt names into the
-    company's inbox, on the owner's instruction (see `inbox.download_listed`)."""
+    company's inbox, one by one (see `inbox.download_listed`)."""
     company = sources.load(company_id)
     listed = inbox.listed_urls(config.INBOX / f"{company_id}-to-download.txt")
     report(
@@ -255,9 +255,9 @@ def run_index(
 ) -> int:
     """Build a company's index version from what was read and print its manifest;
     with `live`, make it the version served. With `read_roles`, passages whose role
-    statements were never read are read by the chat model (K24); otherwise only kept
+    statements were never read are read by the chat model; otherwise only kept
     readings are used. With `compiled_units`, the units page's list is one compiled
-    passage too (K27)."""
+    passage too."""
     from petroknowledge import ingest
 
     if not config.DATABASE_URL:
@@ -439,7 +439,7 @@ def main(argv: list[str] | None = None) -> int:
     download_parser = commands.add_parser(
         "download-listed",
         help="download the files in data/inbox/<company>-to-download.txt into the "
-        "inbox, on the owner's instruction",
+        "inbox, one by one",
     )
     download_parser.add_argument("company")
     links_parser = commands.add_parser(
@@ -527,12 +527,12 @@ def main(argv: list[str] | None = None) -> int:
     index_parser.add_argument(
         "--read-roles",
         action="store_true",
-        help="read role statements from new passages with the chat model (K24)",
+        help="read role statements from new passages with the chat model",
     )
     index_parser.add_argument(
         "--compiled-units",
         action="store_true",
-        help="add the units page's list as one compiled passage (K27, not adopted)",
+        help="add the units page's list as one compiled passage (not adopted)",
     )
     commands.add_parser(
         "browse", help="give the stored files readable names in data/browse/"

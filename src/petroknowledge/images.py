@@ -4,13 +4,13 @@ Every picture is stored once in data/images/ as a PNG whose longest side is at m
 MAX_SIDE pixels: the format llama.cpp's image loader reads. Pictures come from two
 places:
 - a post's own uploads, named in its Nuxt data (`nuxt.page_media`): the notices,
-  flyers and newsletters downloaded on the owner's instruction (K13);
+  flyers and newsletters downloaded from a list;
 - a PDF's figures, cut from their page by pdfium at their box, as `rendering` draws
   pages.
 
 A picture shown in SHARED places or more is a banner or logo, not content, and is
 left out (Lime Green X43). A figure on a scanned page is left out too: a scan's text
-failed its gate (K12), so it may not come back as text read from a picture. The text
+failed its gate, so it may not come back as text read from a picture. The text
 in each picture is read once by GLM-OCR and saved beside it with what read it.
 """
 
@@ -129,7 +129,7 @@ def collect(
         for media in nuxt.page_media(raw):
             path = stored.get(media_base + media["url"])
             if path is None:
-                continue  # not collected: only the owner's list was downloaded
+                continue  # not collected: only the listed files were downloaded
             try:
                 png = normalised(path.read_bytes())
             except UnidentifiedImageError:

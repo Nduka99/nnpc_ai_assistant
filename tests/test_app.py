@@ -50,7 +50,7 @@ def first_turn(monkeypatch: pytest.MonkeyPatch) -> list[str | None]:
 
 @pytest.fixture(autouse=True)
 def fresh_load(monkeypatch: pytest.MonkeyPatch) -> app_module.Slots:
-    """Every test starts with an empty line and no questions counted (K28)."""
+    """Every test starts with an empty line and no questions counted."""
     slots = app_module.Slots(config.ANSWERS_AT_ONCE, config.QUEUE_LENGTH)
     monkeypatch.setattr(app_module, "SLOTS", slots)
     monkeypatch.setattr(
@@ -532,7 +532,7 @@ def test_the_web_app_is_built_against_the_api_s_current_schema(tmp_path: Path) -
 
 
 def test_the_web_app_shows_the_independence_notice_word_for_word() -> None:
-    # Every interface shows it beside every answer (K02); the CLI prints view's text.
+    # Every interface shows it beside every answer; the CLI prints view's text.
     page = Path(__file__).parent.parent / "web" / "app" / "components"
     assert INDEPENDENT in (page / "ThreadApp.vue").read_text(encoding="utf-8")
 

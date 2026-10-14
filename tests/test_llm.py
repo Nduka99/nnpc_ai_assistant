@@ -42,7 +42,7 @@ def test_chat_sends_the_fixed_request_and_returns_parsed_json(
         "reasoning_effort": "low",
     }
     assert (payload["temperature"], payload["seed"]) == (0.0, 42)
-    assert payload["cache_prompt"] is False  # repeatable answers (K28)
+    assert payload["cache_prompt"] is False  # repeatable answers
     assert payload["max_tokens"] == config.MAX_ANSWER_TOKENS
     assert "model" not in payload
 

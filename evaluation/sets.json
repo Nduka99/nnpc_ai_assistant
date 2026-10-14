@@ -1,7 +1,7 @@
 {
  "sets": {
   "claims-dev-v1": {
-   "description": "K28 claim benchmark: 444 verified claims of the graded dev, scope, wording and company runs; correct by verdict (sound/partial) or by reading (claims of wrong answers: 36 wrong); spec and labels included",
+   "description": "Claim benchmark: 444 verified claims from graded development, scope, wording and company runs, labelled correct by their answer's verdict (sound or partial) or, in wrong answers, claim by claim (36 wrong); spec and labels included",
    "files": {
     "claims.json": "6ad173841dcfb3cb3ae3a0664d52454aae20f5cce45c0210ba099781854c989a",
     "labels.json": "03015f39f60c26a374144aa2c0498bc7d8b4a046704fa45ef84a72241f3a66de",
@@ -103,7 +103,7 @@
    }
   },
   "nnpc-manager-v1": {
-   "description": "Senior NNPC manager demo development menu: 28 cases and four three-turn conversations; 30 answered, six unsupported, four advice referrals.",
+   "description": "Development set of plain-language business questions: 28 cases and four three-turn conversations; 30 answerable, six the sources cannot support, four advice requests.",
    "files": {
     "absence-audit.json": "a41106c274cf0653836a2f1535832d5c40b4ff5d71a4c5b0da059423f758fef9",
     "audit.json": "0b4578c0d8c891bb2a2ef59b5f37813910e6cf7c7d02fa3a9e93b53595c3a1b3",
@@ -139,7 +139,7 @@
    }
   },
   "nnpc-wording-check-v1": {
-   "description": "Independent natural-wording check families for one development gate over public NNPC information.",
+   "description": "Unseen natural-wording check families over public NNPC information.",
    "files": {
     "absence-screen.json": "6360502dab86ec2f922c9037655b79b0727d55b7cc4537f15e94bd8d5a931d7d",
     "author.py": "c4187c1092f484f0daa3802a14e4705fc46826abba3dba62d4959ab898d8a02a",
@@ -217,7 +217,7 @@
    }
   },
   "pdfs-v1": {
-   "description": "K16 born-digital PDF gate: the first 12 table pages among seed-12 candidates, judged from images; whole-table grids",
+   "description": "Born-digital PDF table gate: the first 12 table pages among seed-12 candidates, judged from page images; whole-table grids",
    "files": {
     "amendment-1.md": "51fdaa33a612e5394130e827ad58717f96f4af3bd9a117f61804572f4a50da4a",
     "candidates.json": "851dd2999e264115a18ada300140c2ab5e36b1fa8fce3c9078acb203c4aedfaa",
@@ -284,7 +284,7 @@
    }
   },
   "pictures-v1": {
-   "description": "K16 picture-text gate (X43 B2): 10 post pictures and 10 PDF figures, seed 43, printed words judged from the images before any reading",
+   "description": "Picture-text gate (Lime Green X43 B2's method): 10 post pictures and 10 PDF figures, seed 43, printed words judged from the images before any reading",
    "files": {
     "amendment-1.md": "c23a068d8e0c27b5b8e96bf2248ddb91860b47f76a6a1c580f593b1ca166726d",
     "candidates.json": "6721dffcec691a5326ab29f1e12889398e85c0161f747640a431493f4086b8c2",
@@ -353,7 +353,7 @@
    }
   },
   "scans-v1": {
-   "description": "K12 transcription gate: 12 NNPC scanned pages (seed 42), truth written from page images",
+   "description": "Scanned-page transcription gate: 12 NNPC scanned pages (seed 42), truth written from page images",
    "files": {
     "images/p01-a.png": "220d2719e71dff25d2e58f206b06b16dc2accdcaa4b18162a71802a1fd5352d5",
     "images/p01-b.png": "803b3be4537aea7b6912fb5e304d6347fae5c93f55b0d55caed67b59c1f9b330",
@@ -402,7 +402,7 @@
    }
   },
   "scans-v2": {
-   "description": "K12 transcription gate, fresh pages (seed 7): body text and tables, truth written from page images",
+   "description": "Scanned-page transcription gate, fresh pages (seed 7): body text and tables, truth written from page images",
    "files": {
     "amendment-1.md": "c7a1bfa51571fd2095b93c46c96609407d5f9edc390af76be85190a68dc7d1f0",
     "amendment-2.md": "93e470fc36a6d851b96a3e233bbb3d31ec0484396bae554a110332124e673ad5",
@@ -454,7 +454,7 @@
    }
   },
   "scans-v3": {
-   "description": "C2's unseen check: 10 NNPC scanned pages (seed 11, 9 drawn plus 1 reserve by the table rule), truth written from page images before any C2 code existed",
+   "description": "Unseen check for the transcription methods: 10 NNPC scanned pages (seed 11; 9 drawn plus 1 reserve by the table rule), truth written from page images before the methods were built",
    "files": {
     "amendment-1.md": "90325f4f9aaedb239c79b952ce6bc769cce7ff0ac053d9aa546ad679fa1c24d3",
     "images/p01-a.png": "7b3b201360990842b40d476e600464773efe0e7ca1f5a952a0afcf990ba6d970",
@@ -494,7 +494,7 @@
    }
   },
   "sheets-v1": {
-   "description": "K16 spreadsheet gate: 20 values (seed 21) from the 13 NNPC workbooks, row label and header parts judged from the raw grid",
+   "description": "Spreadsheet gate: 20 values (seed 21) from the 13 NNPC workbooks, row label and header parts judged from the raw grid",
    "files": {
     "context/v01.txt": "f3619d138ec7275abc8b3d8b707cd36530aa3432744d8ed78790282631e58dcb",
     "context/v02.txt": "c05dc527adf1d0f09e05bff711c5faa29813a3e4564db88b7a5f1e1279d4dec4",
@@ -522,7 +522,7 @@
    }
   },
   "sheets-v1b": {
-   "description": "sheets-v1 with one truth correction (value 17's header; corrections.md)",
+   "description": "sheets-v1 with one truth correction (value 17's header)",
    "files": {
     "context/v01.txt": "f3619d138ec7275abc8b3d8b707cd36530aa3432744d8ed78790282631e58dcb",
     "context/v02.txt": "c05dc527adf1d0f09e05bff711c5faa29813a3e4564db88b7a5f1e1279d4dec4",
@@ -579,7 +579,7 @@
    }
   },
   "web-v1": {
-   "description": "K16 web gate: NNPC pages against what they show (X42's method)",
+   "description": "Web page gate: NNPC pages against what they show (Lime Green X42's method)",
    "files": {
     "amendment-1.md": "9ed1d281d33c3858fcf1d246a87c63df1db4d9033a3ac609f544dbb03dbd685a",
     "amendment-2.md": "c2e9b5ea5ad365d1a199e2706095a493e0e42a0f14796ec0db84e4f07d019988",
@@ -802,7 +802,7 @@
    }
   },
   "web-v1b": {
-   "description": "K16 web gate held-out pages (seed 43), judged only after any fix is written",
+   "description": "Web page gate, held-out pages (seed 43), judged only after any fix was written",
    "files": {
     "outlines/0b6ac12f7471fdecf56dd5ca73de00083a570babb6b99b681a6a9b250bcd35e0.json": "38e119971cc9e6f6961c47c4075fe4fe73ab3a1dca3cfa97c567bb73c873d1a3",
     "outlines/2c025e6a9b8cdfa18150807459757ac4cdf439fcd799f242535eff8c0932e9d5.json": "b93ad90a5443365a89132a3337ac9c528661d2d75eb50f0cde904e4d14ddf310",

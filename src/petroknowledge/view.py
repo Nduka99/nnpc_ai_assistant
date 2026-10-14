@@ -16,7 +16,7 @@ from petroknowledge.answer import closest_pages
 from petroknowledge.records import Answer
 from petroknowledge.verify import source_link
 
-# Shown by every interface beside every answer (K02; NNPC's terms forbid implying
+# Shown by every interface beside every answer (NNPC's terms forbid implying
 # affiliation).
 INDEPENDENT = (
     "Independent research prototype, not affiliated with or endorsed by NNPC Limited. "
@@ -35,7 +35,7 @@ class Source(TypedDict):
     url: str
     published: str  # a post's publication date, YYYY-MM-DD, else empty
     captured: str  # capture date, YYYY-MM-DD
-    compiled: bool  # quoted from a list compiled from the page, not the page (K27)
+    compiled: bool  # quoted from a list compiled from the page, not the page
 
 
 class ClaimView(TypedDict):

@@ -97,7 +97,7 @@ def text_vector(question: str) -> list[float]:
     """A question's SigLIP2 vector, for ranking pictures by what they show. A
     question with several parts asks from several threads at once; the lock lets one
     of them load the text tower while the others wait, since two loads at once fail
-    in transformers' lazy imports (seen on a two-part question, 11 October)."""
+    in transformers' lazy imports (seen on a two-part question)."""
     with LOADING:
         encode = text_encoder()
     return encode([question])[0]

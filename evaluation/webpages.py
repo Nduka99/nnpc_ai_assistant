@@ -1,4 +1,4 @@
-"""K16's web gate: Lime Green's X42 method on NNPC's pages.
+"""The web page gate: Lime Green's X42 method on NNPC's pages.
 
 Pages are drawn by seed from the saved web readings, per stratum. Each is drawn by
 headless Chromium from its stored HTML, with the site's own CSS, fonts and scripts, as
@@ -26,12 +26,12 @@ from petroknowledge import config
 VIEWPORT = {"width": 1280, "height": 900}
 LOAD_MS = 60_000  # a page that has not loaded by then is reported, not judged
 BLOCKED = (
-    # robots.txt forbids crawlers on NNPC's CMS hosts (K11): their pictures stay out.
+    # robots.txt forbids crawlers on NNPC's CMS hosts: their pictures stay out.
     "cms1977.nnpcgroup.com",
     "staging-cms1977.nnpcgroup.com",
     "nnpc-web-cms.nnpcgroup.com",
     # Trackers and live widgets: not part of the page a visitor reads, and they keep
-    # the network busy (NNPC's error tracker and price ticker, K09).
+    # the network busy (NNPC's error tracker and price ticker).
     "sentry.io",
     "check-dc.com",
     "googletagmanager.com",

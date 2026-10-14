@@ -76,7 +76,7 @@ def record_failure(
 def record_feedback(
     answer_id: int, conversation_id: str, helpful: bool, comment: str
 ) -> bool:
-    """Keep a reader's judgement of an answer from its own conversation (K28);
+    """Keep a reader's judgement of an answer from its own conversation;
     whether it was kept."""
     with connect() as conn:
         return store.record_feedback(conn, answer_id, conversation_id, helpful, comment)
@@ -219,7 +219,7 @@ def asked_units(
     conn: store.Connection, version_id: int, question: str, history: History
 ) -> list[dict[str, Any]]:
     """The units the user's own words name (`units.asked`), never the model's rewrite
-    of them (K23): each with its id, name, acronym and url."""
+    of them: each with its id, name, acronym and url."""
     found = store.version_units(conn, version_id)
     places = units.asked(units.naming(found), question, history)
     return [found[place] for place in places]
@@ -229,7 +229,7 @@ def scoped_retriever(
     conn: store.Connection, version_id: int, models: Models, unit_ids: Sequence[int]
 ) -> Retrieve | None:
     """A search of an index version inside the units' scope: its best
-    `config.SCOPED_TOP` passages (K23, Lime Green E5 B4); none for no units."""
+    `config.SCOPED_TOP` passages (Lime Green E5 B4); none for no units."""
     if not unit_ids:
         return None
 
@@ -242,15 +242,15 @@ def scoped_retriever(
 
 def current_roles(conn: store.Connection, version_id: int) -> list[dict[str, Any]]:
     """A version's roles, each with its latest holder and earlier ones, after each
-    statement's organisation is resolved to the unit it is about (K30 G2)."""
+    statement's organisation is resolved to the unit it is about."""
     statements = store.version_role_statements(conn, version_id)
     listed = store.version_units(conn, version_id)
     return roles.latest(roles.resolve(statements, listed))
 
 
 def stale_check(conn: store.Connection, version_id: int) -> StaleCheck | None:
-    """The check removing a claim that names an earlier holder of a role it names
-    (K30 G4); None for a version without role statements."""
+    """The check removing a claim that names an earlier holder of a role it names;
+    None for a version without role statements."""
     found = current_roles(conn, version_id)
     if not found:
         return None
@@ -262,8 +262,8 @@ def stale_check(conn: store.Connection, version_id: int) -> StaleCheck | None:
 
 
 def structure_lookup(conn: store.Connection, version_id: int) -> StructureLookup | None:
-    """The company's current structure from the graph (K30 G3): the compiled
-    passage, which the answer request is pointed to (K31), when the user's words name
+    """The company's current structure from the graph: the compiled
+    passage, which the answer request is pointed to, when the user's words name
     two of its groups or units, or a passage found names three of its groups (a
     competing classification). None for a version without a structure or a compiled
     passage."""
@@ -283,7 +283,7 @@ def structure_lookup(conn: store.Connection, version_id: int) -> StructureLookup
 
 
 def role_lookup(conn: store.Connection, version_id: int) -> RoleLookup | None:
-    """Who holds the roles a question's words ask about (K24): the latest dated
+    """Who holds the roles a question's words ask about: the latest dated
     statement of each (`roles.latest`, `roles.naming`) and its earlier holders, as the
     line for the answer request and their passages, oldest first. None for a version
     without role statements."""
@@ -310,7 +310,7 @@ def extras(conn: store.Connection, version_id: int, models: Models) -> Extra:
     best pictures, then its best guidance, each kept only where the reranker places
     it above the company's last place (`above_company`). NNPC's pictures are read
     for their words only, which the reranker reads in their context, so a picture no
-    better than the company's passages is not pointed to (K21). A version with no
+    better than the company's passages is not pointed to. A version with no
     pictures never loads the picture model."""
     has_pictures = store.has_pictures(conn, version_id)
 

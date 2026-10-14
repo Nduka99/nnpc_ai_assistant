@@ -1,4 +1,4 @@
-"""Spreadsheet values placed in their row and column (K16; Lime Green X8's "values
+"""Spreadsheet values placed in their row and column (Lime Green X8's "values
 placed" measure, for workbooks).
 
 Values are drawn by one seeded generator from the numeric cells of the workbooks as

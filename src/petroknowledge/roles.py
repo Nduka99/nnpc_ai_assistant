@@ -1,10 +1,10 @@
-"""Dated roles (K24): who holds which role, as each dated source states it, so code
+"""Dated roles: who holds which role, as each dated source states it, so code
 decides which statement is the latest. A model cannot reliably tell an outdated fact
 from a current one; dates can.
 
 A statement (person, role, organisation, quote) is read from one dated passage by
 one structured request, and kept only when code finds its quote in the passage with
-the person's name in it (K15's rule for model-proposed edges). It is as of its
+the person's name in it (the rule for every fact a model proposes). It is as of its
 passage's date: a post's publication date, else a page's capture date.
 
 Statements are grouped by role and organisation. One role is written many ways
@@ -84,7 +84,7 @@ EXTRACT_SCHEMA: dict[str, Any] = {
 FIELDS = ("person", "role", "organisation", "quote")
 SMALL_WORDS = frozenset({"of", "the", "and", "to"})  # not part of a role's key
 # An acting holder holds the role: "Ag. Chief Upstream Investment Officer" is the
-# chief upstream investment officer (NUIMS's own page, K30).
+# chief upstream investment officer (NUIMS's own page).
 ACTING = frozenset({"acting", "ag"})
 
 
@@ -212,8 +212,8 @@ def same_person(one: str, other: str) -> bool:
 def resolve(
     statements: Sequence[Statement], listed: Sequence[units.Unit]
 ) -> list[Statement]:
-    """Each statement with its organisation resolved to the entity it is about (K30
-    G2), so one role written with several spellings of its organisation is one role:
+    """Each statement with its organisation resolved to the entity it is about,
+    so one role written with several spellings of its organisation is one role:
     a unit its organisation names (by name, acronym or former name), whose names then
     leave the title; else a unit its title names, likewise; else, on a unit's own page,
     that unit when the organisation is the company itself (a unit's management team is
@@ -437,7 +437,7 @@ def organisation_named(text: str, role: Mapping[str, Any]) -> bool:
 def as_named(statement: Statement, text: str) -> Statement:
     """A statement as its passage names it: without an organisation the passage does
     not name. The schema requires one, so a passage naming none gets a filler ("not
-    specified") or a guess ("Federal Government"): 110 of 2,011 statements (K30)."""
+    specified") or a guess ("Federal Government"): 110 of 2,011 statements."""
     if organisation_named(text, statement):
         return statement
     return dict(statement) | {"organisation": ""}
@@ -447,8 +447,8 @@ def earlier_holder(
     text: str, found: Sequence[Mapping[str, Any]], whole: str = ""
 ) -> str:
     """Why a claim must go because it names an earlier holder of a role it names,
-    and neither it nor the rest of its answer (`whole`) names the latest holder (K30
-    G4); "" when it does not. A role is named when every word of its title is in the
+    and neither it nor the rest of its answer (`whole`) names the latest holder;
+    "" when it does not. A role is named when every word of its title is in the
     claim ("Executive Vice President (EVP), Downstream") and its organisation is
     named, or is the site's own; the dates decided who is latest (`latest`)."""
     words = set(units.fold(text).split())

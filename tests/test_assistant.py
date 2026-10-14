@@ -75,7 +75,7 @@ class Chat:
 
     def __call__(self, system: str, user: str, schema: dict[str, Any]) -> object:
         self.requests.append((system, user))
-        if "verdict" in schema["properties"]:  # the grounding check (K28)
+        if "verdict" in schema["properties"]:  # the grounding check
             return {"verdict": "supported"}
         if "asks_for_advice" in schema["properties"]:
             asked = user.rsplit("Question: ", 1)[1]
@@ -108,7 +108,7 @@ def served(
 def test_an_answer_comes_from_the_live_index_and_is_recorded(
     served: Chat, pg: store.Connection, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    # Every claim judged, so the record holds each kind of model request (K32's
+    # Every claim judged, so the record holds each kind of model request (the
     # default judges only claims stating a figure, and this one states none).
     monkeypatch.setattr(config, "GROUNDING", "remove")
     result, answer_id = assistant.ask_and_record("How long to commission the plant?")

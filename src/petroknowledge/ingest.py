@@ -6,7 +6,7 @@ context and text the newest version of the same embedder already holds keeps its
 stored vector (Lime Green X43 A4). The version is fingerprinted and written to
 Postgres beside the live one (`store.write_version`), with the pictures its passages
 show and their SigLIP2 vectors, and with the business units its company's units
-page lists and the passages in each one's scope (K23).
+page lists and the passages in each one's scope.
 """
 
 import hashlib
@@ -76,7 +76,7 @@ def stored_pictures(
 def role_statements(
     conn: store.Connection, version_id: int, chat: Chat | None
 ) -> tuple[list[dict[str, Any]], dict[str, int]]:
-    """A version's role statements (K24): each dated post or page passage that names
+    """A version's role statements: each dated post or page passage that names
     a role title is read once (`roles.extract`); its reading is kept by its text, so
     only new passages are read. With no `chat`, only kept readings are used. Returns
     the statements, each dated, and how many passages were read, left unread or
@@ -118,7 +118,7 @@ def role_statements(
 def structure_rows(
     company_id: str, listed: list[units.Unit], unit_ids: list[int]
 ) -> list[tuple[str, str, int | None]]:
-    """The units page's groups as structure edges (K30 G1): (group, member, unit id),
+    """The units page's groups as structure edges: (group, member, unit id),
     a member linked to the unit it names, if any."""
     named = units.naming(listed)
     rows = []
@@ -141,7 +141,7 @@ def build(
     """Build a new index version of a company's passages and, if `live`, make it
     the one served; return its id and manifest. The version is written beside the
     live one, so a failed build leaves the served index untouched. With
-    `compiled_units`, the units page's list is one compiled passage too (K27)."""
+    `compiled_units`, the units page's list is one compiled passage too."""
     rows, documents = corpus.build(company_id, compiled_units)
     listed = corpus.listed_units(company_id)
     known = store.known_vectors(conn, config.EMBEDDING_MODEL)

@@ -2,7 +2,7 @@
 import { ref } from "vue";
 import LineIcon from "./LineIcon.vue";
 
-// How to ask (K33): five habits measured to fix failed questions on development data,
+// How to ask: five habits measured to fix failed questions on development data,
 // and starter questions the assistant answered soundly. It opens over the
 // conversation without leaving it (non-modal), and the reader can keep it open
 // while writing.

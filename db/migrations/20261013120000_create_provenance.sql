@@ -1,4 +1,4 @@
--- Provenance and history (ADR 0016). Every request sent to the generator while
+-- Provenance and history. Every request sent to the generator while
 -- answering (the understanding request, any second rewrite, the answer request) is
 -- kept with the model's reply, so a reviewer can see exactly what produced an
 -- answer; it is written in the same transaction as the answer. A question that got

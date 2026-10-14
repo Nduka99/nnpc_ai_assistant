@@ -6,9 +6,9 @@ All SQL lives here. Retrieval and answering stay plain functions that receive th
 rankings. An index version is written beside the live one and made live in one
 transaction, so a failed build never touches what is served.
 
-Lime Green's price filter (X16) is not carried over: per-unit prices are answered
-from the live tier only (plan §8). Its product scope returns as business units
-(K23): a version keeps its units and the passages in each one's scope, and a search
+Lime Green's price filter (X16) is not carried over: per-unit prices are never
+answered from the index (`prices`). Its product scope returns as business units: a
+version keeps its units and the passages in each one's scope, and a search
 can be kept inside them.
 """
 
@@ -397,7 +397,7 @@ def write_units(
 def write_structure(
     conn: Connection, version_id: int, rows: Sequence[tuple[str, str, int | None]]
 ) -> None:
-    """Store a version's structure (K30 G1): (group, member, unit id or None) in the
+    """Store a version's structure: (group, member, unit id or None) in the
     units page's order."""
     with conn.transaction(), conn.cursor() as cursor:
         cursor.executemany(
@@ -424,7 +424,7 @@ def version_structure(conn: Connection, version_id: int) -> list[dict[str, Any]]
 
 
 def compiled_passage(conn: Connection, version_id: int) -> Passage | None:
-    """A version's compiled units passage (K27), if it holds one."""
+    """A version's compiled units passage, if it holds one."""
     row = conn.execute(
         "SELECT id FROM passages WHERE index_version_id = %s AND heading = %s "
         "ORDER BY id LIMIT 1",
@@ -450,7 +450,7 @@ def dated_passages(
 ) -> list[tuple[int, str, str, date | None, str]]:
     """A version's quotable company posts and pages as (id, title, text, publication
     date or None, capture date YYYY-MM-DD): the passages role statements are read
-    from (K24)."""
+    from."""
     rows = conn.execute(
         "SELECT p.id, p.title, p.text, p.published, d.fetched_at FROM passages p "
         "JOIN documents d ON d.id = p.document_id WHERE p.index_version_id = %s "

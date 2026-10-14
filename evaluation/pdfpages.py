@@ -1,4 +1,4 @@
-"""Born-digital PDF pages scored against truth judged from their images (K16; Lime
+"""Born-digital PDF pages scored against truth judged from their images (Lime
 Green's X8 round 3 on NNPC's documents).
 
 Candidates are every page with a text layer (at least MIN_WORDS visible words and

@@ -10,7 +10,7 @@ Each sheet with content becomes one table:
   header in the latest block above it, so a figure keeps its row label, column and
   unit in the text quoted. A block may come after a row of column numbers, and a
   sheet may hold several, stacked or side by side (NNPC's royalty, tax and
-  production sheets; K16, sheets-v1).
+  production sheets; sheets-v1).
 
 Merged cells repeat their value in every position they cover, as PDF tables do, so
 a group label reaches each column under it. Numbers keep up to 15 significant

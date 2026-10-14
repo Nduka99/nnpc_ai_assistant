@@ -73,8 +73,8 @@ ingest = [
     "openpyxl>=3.1",
     "xlrd>=2.0",
 ]
-# Reader gates: web pages are drawn by headless Chromium (K16, X42's method). The floor
-# is the Lime Green assistant's.
+# Reader gates: web pages are drawn by headless Chromium (Lime Green's X42 method).
+# The floor is the Lime Green assistant's.
 evaluation = [
     "playwright>=1.63.0",
 ]

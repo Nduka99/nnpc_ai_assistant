@@ -1,4 +1,4 @@
-"""K16's picture-text gate (X43 B2): pictures drawn by seed per source, their saved
+"""The picture-text gate (X43 B2): pictures drawn by seed per source, their saved
 readings scored by word counts. Every picture, post and text here is invented."""
 
 import json

@@ -1,7 +1,7 @@
-"""K16's picture-text gate (Lime Green X43 B2, carried over for NNPC).
+"""The picture-text gate (Lime Green X43 B2, carried over for NNPC).
 
 Pictures are drawn by seed from the stored pictures (data/images/places.json): the
-posts' own uploads (K13) and PDF figures. The printed words of each chosen picture are
+posts' own uploads and PDF figures. The printed words of each chosen picture are
 written from its image before any reading is looked at, and the saved readings are
 scored against them as the index would keep them. The rules are in each set's rules.md.
 """

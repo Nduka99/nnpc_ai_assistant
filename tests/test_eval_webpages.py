@@ -1,4 +1,4 @@
-"""K16's web gate (X42's method): pages drawn by stratum, rendered as a visitor who
+"""The web gate (X42's method): pages drawn by stratum, rendered as a visitor who
 reads all of a page sees it, judged as outlines, and readings scored. Every page,
 person and word here is invented."""
 

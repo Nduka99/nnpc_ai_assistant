@@ -1,4 +1,4 @@
--- Feedback on answers (K28): a reader marks an answer helpful or not right, with an
+-- Feedback on answers: a reader marks an answer helpful or not right, with an
 -- optional comment, so testers' judgements become evaluation material. It is only
 -- accepted from the conversation the answer belongs to, and read only on this
 -- machine (`petroknowledge history`), never served.

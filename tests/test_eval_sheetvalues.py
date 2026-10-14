@@ -1,4 +1,4 @@
-"""K16's spreadsheet gate: values drawn by seed from the workbooks as stored, saved
+"""The spreadsheet gate: values drawn by seed from the workbooks as stored, saved
 readings scored by row label and header. Every workbook and value here is invented."""
 
 import json

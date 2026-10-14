@@ -74,7 +74,7 @@ def test_quotes_may_differ_only_in_case_whitespace_and_typography() -> None:
     assert find_quote("3–6 m", row) == "3-6 m"
     assert find_quote("m3", row) == "m³"
     assert find_quote("field", row) == "ﬁeld"
-    # Invisible format characters are never copied into a quote (K30).
+    # Invisible format characters are never copied into a quote.
     team = "Ada Obi​\nManaging Director"
     assert find_quote("Ada Obi\nManaging Director", team) == team
 
@@ -330,7 +330,7 @@ def test_a_number_in_the_cited_sources_title_or_stated_date_counts() -> None:
                              "per cent."), Claim)  # fmt: skip
     assert isinstance(result("The 29 Sept. 2026 release says gross profit rose 145 "
                              "per cent."), Claim)  # fmt: skip
-    # The source's own year, standing alone (K32); a figure beside it is the
+    # The source's own year, standing alone; a figure beside it is the
     # grounding check's to judge.
     assert isinstance(result("In 2026, gross profit rose 145 per cent."), Claim)
     assert reason(result("In 2025, gross profit rose 145 per cent.")) == (

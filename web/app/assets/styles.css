@@ -1,5 +1,5 @@
 /* PetroKnowledge's thread (Lime Green's stylesheet). A neutral blue accent and system
-   type in light and dark, with no company's colours or logo (ADR 0001); every text
+   type in light and dark, with no company's colours or logo; every text
    colour meets WCAG 2.2 AA on the surface it sits on (body and labels at least
    4.5:1). */
 
@@ -311,7 +311,7 @@ a {
   background: var(--accent-soft);
 }
 
-/* How to ask (K33): opens over the conversation as part of the question bar, which
+/* How to ask: opens over the conversation as part of the question bar, which
    stays in view, so the guide can be read beside the question being written. Being
    in the bar's flow, its height counts in the page's bottom scroll padding, so
    keyboard focus in the conversation never lands behind it (WCAG 2.4.11). */
@@ -849,7 +849,7 @@ a {
   }
 }
 
-/* Feedback on an answer (K28): quiet, below the answer, never competing with it. */
+/* Feedback on an answer: quiet, below the answer, never competing with it. */
 
 .feedback {
   margin-top: 0.75rem;

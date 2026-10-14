@@ -1,5 +1,5 @@
 <#
-Starts PetroKnowledge for a demo and keeps it up (K28): Postgres in WSL, the three
+Starts PetroKnowledge for a demo and keeps it up: Postgres in WSL, the four
 model servers, the web app and the quick tunnel. Every minute it checks each one and
 starts whatever is down, so a crash or a reboot of one part does not end the demo.
 The tunnel's current link is written to data/link.txt (a quick tunnel gets a new link
@@ -26,7 +26,7 @@ $Models = @(
     @{ Name = "reranker"; Port = 8082; Args = "-m models\bge-reranker-v2-m3-Q8_0.gguf --reranking -np 1 -c 2048 -b 2048 -ub 2048 --cache-ram 0 -ngl all --fit off --host 127.0.0.1 --port 8082" },
     @{ Name = "generator"; Port = 8080; Args = "-m models\gemma-4-26B-A4B-it-UD-Q4_K_XL.gguf -c 32768 -np 2 --no-kv-unified -ngl all --n-cpu-moe 99 --fit off --load-mode none -b 2048 -ub 2048 --cache-ram 2048 --host 127.0.0.1 --port 8080" },
     @{ Name = "embedder"; Port = 8084; Args = "-m models\Qwen3-Embedding-4B-GGUF\Qwen3-Embedding-4B-Q8_0.gguf --embedding --pooling last -np 1 -c 2048 -b 2048 -ub 2048 --cache-ram 0 --device none --host 127.0.0.1 --port 8084" },
-    # The grounding judge (K28) starts last: llama.cpp fits its layers into the GPU
+    # The grounding judge starts last: llama.cpp fits its layers into the GPU
     # memory the generator leaves and runs the rest on the CPU.
     @{ Name = "judge"; Port = 8085; Args = "-m models\NVIDIA-Nemotron-3-Nano-4B-Q8_0.gguf -c 8192 -np 1 --cache-ram 0 --host 127.0.0.1 --port 8085" }
 )

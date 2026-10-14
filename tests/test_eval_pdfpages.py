@@ -1,4 +1,4 @@
-"""K16's gate for born-digital PDF pages: candidates drawn by seed, saved readings
+"""The gate for born-digital PDF pages: candidates drawn by seed, saved readings
 scored against truth grids. Every document, page and text here is invented."""
 
 import json

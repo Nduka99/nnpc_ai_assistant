@@ -11,7 +11,7 @@ Two measures need no grader:
   key's expected status;
 - **reach**: whether the passages the model was given hold each part's evidence,
   found by the matcher claims are verified with (`verify.find_quote`). Evidence on a
-  scanned page or in a picture is reached when the answer points to its page (K21).
+  scanned page or in a picture is reached when the answer points to its page.
   Evidence is matched to sources by file (SHA-256), as the key names it, so a file
   collected from two addresses counts once.
 """
@@ -97,7 +97,7 @@ def run(
 def reached(evidence: Mapping[str, Any], entry: Mapping[str, Any],
             files: Mapping[str, str]) -> bool:  # fmt: skip
     """Whether one evidence item reached the answer: its quote in a given passage of
-    its file, also with punctuation and spacing folded (K29 instrument amendment: a
+    its file, also with punctuation and spacing folded (an amendment to the measure: a
     compiled list writes "(NGIC); NNPC Gas" where the page's text, as the key quotes
     it, has "(NGIC) NNPC Gas"), or, for a scanned page or a picture, its page pointed
     to. `files` gives each address's file (SHA-256)."""

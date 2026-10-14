@@ -1,5 +1,5 @@
 """Business units read from a company's own units page, named in a user's words,
-and the passages in each unit's scope (K23). Every page and passage here is
+and the passages in each unit's scope. Every page and passage here is
 invented."""
 
 from petroknowledge import units

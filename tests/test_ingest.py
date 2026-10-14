@@ -149,7 +149,7 @@ def test_the_index_command_builds_a_version_and_can_make_it_live(
     assert out.rstrip().endswith("index version 1: live")
     assert store.live_version(pg) == (1, config.EMBEDDING_MODEL)
     assert cli.main(["index", "acme", "--compiled-units"]) == 0
-    assert built == [False, True]  # the compiled list only on request (K27)
+    assert built == [False, True]  # the compiled list only on request
 
 
 def test_role_statements_are_read_once_per_text_and_dated(

@@ -2,25 +2,27 @@
 
 An independent evidence assistant over public oil and gas company information. It
 starts with NNPC Limited, then the Dangote refinery and Nigeria LNG. The aim is the
-same contract as the Lime Green assistant it extends: every claim shows a quotation
-that code found in its source, and questions the sources cannot answer get a fixed
-refusal.
+same contract as the [Lime Green assistant](https://github.com/Nduka99/lime_green_ai_assistant)
+it extends: every claim shows a quotation that code found in its source, and
+questions the sources cannot answer get a fixed refusal.
 
 **Independent.** This project is not affiliated with, endorsed by or connected to
 NNPC Limited, Dangote Petroleum Refinery, Nigeria LNG or any other company it reads
 about. It uses no company logos.
 
-> **Status, October 2026.** Collection and reading are built, and every reader has
-> been measured against truth judged from the sources themselves (see Evaluation).
-> The index is being built: passages, the corpus builder and the Postgres schema are
-> in place; storage, search, answers, the knowledge graph and the web app come next.
+> **Status, October 2026.** Working end to end for NNPC: collection, reading, a
+> Postgres index with a small knowledge graph (business units and dated roles), cited
+> answers checked word for word and by a second model, a web app and a JSON API.
+> Every reader, and every change to the answer path, was measured before it was kept
+> (see Evaluation). Dangote and Nigeria LNG come next.
 
 Each company's sources are in `companies/<id>/`.
 
 ## What is collected, and what is never published
 
-Each company has a folder, `companies/<company>/`, with its `sources.json`; the news feeds they share are in `companies/news.json`. A company
-without a `sources.json` is still being planned and is not collected. Two tiers:
+Each company has a folder, `companies/<company>/`, with its `sources.json`; the news
+feeds they share are in `companies/news.json`. A company without a `sources.json` is
+still being planned and is not collected. Two tiers:
 
 - **Core sources** are read and indexed:
   - site pages;
@@ -71,7 +73,7 @@ uv run petroknowledge acquire nnpc --measure           # size the core sources (
 uv run petroknowledge acquire nnpc                     # collect them
 uv run petroknowledge acquire nnpc --linked --measure  # size the files those pages link
 uv run petroknowledge acquire nnpc --linked            # collect them
-uv run petroknowledge download-listed nnpc             # on the owner's instruction (below)
+uv run petroknowledge download-listed nnpc             # files a person listed (below)
 uv run petroknowledge add nnpc                         # store the inbox's files (below)
 uv run petroknowledge links nnpc                       # keep NNPC's posts as links
 uv run petroknowledge news                             # keep news items naming each company
@@ -85,12 +87,12 @@ disallows everything, so the collector never fetches them. Two ways bring them i
 
 - **By hand.** A person opens those public links in a browser and saves the files
   into `data/inbox/<company>/` under the name at the end of each link.
-- **On the owner's instruction.** `download-listed` fetches exactly the files named
+- **From a list.** `download-listed` fetches exactly the files a person has named
   in `data/inbox/<company>-to-download.txt` into the inbox. It crawls nothing,
   identifies itself as the collector does and waits five seconds between files.
 
-`add` stores each file with its original URL and how it came: "hand", or "download on
-the owner's instruction (robots.txt disallows crawlers)". It refuses any file whose
+`add` stores each file with its original URL and how it came: "hand", or "listed
+download (robots.txt disallows crawlers)". It refuses any file whose
 name matches no link the company's sources list or its stored pages carry.
 
 Each collected file is stored once in `data/files/`, named by its SHA-256.
@@ -162,8 +164,11 @@ come as spreadsheets.
 
 The reading modules (`pdf`, `visibility`, `recovery`, `rendering`, `tables`,
 `layout`, `documents`, `webpage`), the model-server client and telemetry are adopted
-from the author's MIT-licensed Lime Green assistant. Comments that cite experiment
-codes such as X42 or ADR 0027 refer to that project's records.
+from the author's MIT-licensed
+[Lime Green assistant](https://github.com/Nduka99/lime_green_ai_assistant). Comments
+that cite codes such as X42, E5 or ADR 0027 refer to that project's
+[evaluation reports](https://github.com/Nduka99/lime_green_ai_assistant/tree/main/evaluation/reports)
+and [decision records](https://github.com/Nduka99/lime_green_ai_assistant/tree/main/docs).
 
 ## Evaluation
 
@@ -179,7 +184,20 @@ uv run python -m evaluation pdf-score SET --out FILE    # born-digital PDF table
 uv run python -m evaluation sheet-score SET --out FILE  # spreadsheet values
 uv run --group evaluation python -m evaluation web-render SET   # pages as a visitor sees them
 uv run python -m evaluation web-score SET --out FILE    # web pages
+uv run --env-file .env python -m evaluation ask-keys SET --file KEY --out RUN   # answers
 ```
+
+Answers are measured the same way. Question sets and their evidence keys are written
+from the sources independently of the assistant and registered before any run; the
+sealed held-out sets are asked once, for a release.
+- `ask-keys` asks a set through the full answer path and records every reply.
+- `grading-items` and `grade-counts` turn graded answers into counts per case type
+  and the release bar's Wilson upper bound on wrong answers.
+- `second-sample` and `grade-agreement` compare a blind second grader by Cohen's κ.
+- `rescore` checks recorded replies again with today's checks, so a change to a check
+  is measured without asking the model again.
+- A change is kept only when it beats the run-to-run noise measured by asking the same
+  set twice with nothing changed.
 
 ## Index database
 
@@ -209,6 +227,15 @@ Scanned pages' transcripts and the text read in pictures are searched but never
 quoted: neither reading passed its gate. A passage already embedded by an earlier
 version keeps its vector, so a rebuild embeds only new text.
 
+Each version also holds a small knowledge graph, built by code rather than by a model:
+- the business units the company's own units page lists, with its groups and their
+  members;
+- dated role statements (who holds which office), read from dated posts and pages and
+  kept only when code finds the quote in its passage.
+
+The current holder of a role is decided by date, not by how often a name appears:
+former office-holders are mentioned far more often than current ones.
+
 ## Ask
 
 ```sh
@@ -218,23 +245,28 @@ uv run --env-file .env petroknowledge ask "Who is NNPC's Group Chief Executive O
 The answer is a list of short claims, each backed by a quote checked word for word
 against a quotable source. Each source is printed with its link and dates. A claim
 whose quote, number, amount or regulation is not in its source is removed, never
-repaired. The reader then sees which parts of the question were not answered.
+repaired. When the checks leave a part of the question without a claim, the model
+is asked once more with the reasons, and its new claims are checked the same way. The
+reader then sees which parts of the question were not answered.
 
 - A request for investment, legal or safety advice gets fixed referral text.
 - Pages that search found but that may not be quoted (scanned pages, words read in
   pictures) are listed for the reader to open.
 - Every answer is stored for audit with the passages, prompts and index version used.
 
-It needs three local model servers (llama.cpp):
+It needs four local model servers (llama.cpp):
 - the embedder on port 8084;
 - the reranker (bge-reranker-v2-m3) on 8082;
-- the generator, Gemma 4 26B-A4B, on 8080.
+- the generator, Gemma 4 26B-A4B, on 8080;
+- the grounding judge, NVIDIA Nemotron 3 Nano 4B, on 8085. It checks each claim that
+  states a figure against the passages the claim cites, so a model of another family
+  judges what the generator wrote.
 
 ## How to ask
 
-These habits were measured on development questions that had failed: asked again
-by them, most were answered. The web page shows the same list under "How to ask",
-beside the question box.
+Each habit was tested: development questions that had failed were reworded by these
+habits alone and asked again, and most then got a sound answer, with none made worse.
+The web page shows the same list under "How to ask", beside the question box.
 
 1. **Name what you mean.** Say the unit, company or report: "NGIC's managing
    director", not "who runs the gas pipes". Broad questions fail most.
@@ -271,13 +303,15 @@ The API gives the same answer as `ask`, as JSON:
   stage as it starts, then the verified answer. Unverified text is never sent.
 - A follow-up sends back `conversation_id`. The server keeps the conversation and
   rebuilds its history from what it showed, so a request carrying a history is refused.
-- `GET /healthz` checks the process; `GET /readyz` checks the database and the three
+- `GET /healthz` checks the process; `GET /readyz` checks the database and the four
   model servers.
 
 To let invited people try it while this machine runs it, a Cloudflare quick tunnel
 gives a temporary public link without an account
 (`cloudflared tunnel --url http://127.0.0.1:8091`). It has no uptime guarantee, and
-the link changes each time the tunnel starts.
+the link changes each time the tunnel starts. On Windows, `scripts/start-demo.ps1`
+starts the database, the model servers, the app and the tunnel, and restarts any of
+them that stops.
 
 ## History
 
@@ -312,7 +346,9 @@ network or run a model. They check the collection rules:
 - resumable runs.
 
 They also check the reading rules: host rules, Nuxt data, page validation and
-retries in child processes.
+retries in child processes. And they check the answer path: quote, number and date
+verification, the grounding check, the role and structure lookups, conversations, and
+the API's limits and stream.
 
 The index tests run against the development Postgres (above), in a throwaway database
 created and dropped by the test session, so it must be running.

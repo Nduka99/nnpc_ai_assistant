@@ -5,7 +5,7 @@ import LineIcon from "./LineIcon.vue";
 // The question box: Enter asks, Shift+Enter starts a new line. It stays ready for
 // typing while an answer is on its way; only asking waits, and the button then
 // stops the answer instead (Nielsen 3, user control).
-// It also holds the How to ask toggle (K33), so the guide can be reopened from
+// It also holds the How to ask toggle, so the guide can be reopened from
 // wherever the reader is in a long conversation.
 const props = defineProps<{ busy: boolean; guideOpen: boolean }>();
 const emit = defineEmits<{ ask: [question: string]; stop: []; guide: [] }>();

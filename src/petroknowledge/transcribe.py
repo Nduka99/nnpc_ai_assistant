@@ -7,8 +7,8 @@ such page at 200 DPI (GLM-OCR's setting for PDFs). The layout model finds its re
 headers and footers, and pictures, whose words the picture reader reads. The model
 then reads the rest of the page whole with its text-recognition prompt. Read whole
 with nothing painted out, pages gained chart labels and furniture; read region by
-region, they lost words in tables and doubled lines at region edges (K12: scans-v2,
-arms C0, C2 and C2b). The answers are saved in data/transcripts/<sha256>.json with
+region, they lost words in tables and doubled lines at region edges (measured on
+scans-v2). The answers are saved in data/transcripts/<sha256>.json with
 what produced them. A run resumes page by page. An answer the model did not finish
 (a repetition loop that reached the token limit) is reported and tried again next
 run, never kept.

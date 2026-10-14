@@ -15,7 +15,7 @@ import ThreadTurn from "./ThreadTurn.vue";
 const props = defineProps<{ ask?: typeof askStream }>();
 const ask = props.ask ?? askStream;
 
-// Starter questions (K33): questions written for NNPC managers that the assistant
+// Starter questions: questions from the development keys that the assistant
 // answered soundly, kept in their tested wording.
 const STARTERS = [
   "Give me the headline figures from our latest audited results: profit, revenue, dividend, and daily oil and gas production.",
@@ -25,7 +25,7 @@ const STARTERS = [
   "Who joined NNPC Shipping in the tanker venture announced in February 2025?",
   "Who holds the government's shares in NNPC Limited under the PIA?",
 ] as const;
-// The same words as the command line's (view.INDEPENDENT, K02).
+// The same words as the command line's (view.INDEPENDENT).
 const INDEPENDENT =
   "Independent research prototype, not affiliated with or endorsed by NNPC Limited. Answers quote public documents; check the linked source before relying on one.";
 
@@ -38,7 +38,7 @@ const busy = ref(false);
 const cleared = ref<SavedThread | null>(null);
 const composer = ref<InstanceType<typeof QuestionComposer> | null>(null);
 const composerBar = ref<HTMLElement | null>(null);
-// How to ask (K33): open over the conversation, from the question box's toggle or a
+// How to ask: open over the conversation, from the question box's toggle or a
 // refusal's Tips for asking; closed by its toggle, Close, Esc or asking.
 const guideOpen = ref(false);
 const guide = ref<InstanceType<typeof AskingGuide> | null>(null);

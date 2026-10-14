@@ -1,4 +1,4 @@
-"""The claim benchmark (K28): claims of graded answers, labelled for scoring checks.
+"""The claim benchmark: claims of graded answers, labelled for scoring checks.
 Every key, run and grade here is invented."""
 
 import json

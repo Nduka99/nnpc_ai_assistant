@@ -3,27 +3,27 @@
     uv run python -m evaluation verify                       # every set's hashes
     uv run python -m evaluation register SET --description "..."
     uv run --group ingest python -m evaluation scan-sample SET --seed N \
-        [--per-stratum 4] [--reserve "financial statements=8"]   # K12's pages
+        [--per-stratum 4] [--reserve "financial statements=8"]   # scanned pages
     uv run --group ingest python -m evaluation scan-transcribe SET --vlm URL \
         --prompt "Text Recognition:" --out RUN.json      # one arm on the set's pages
-    uv run python -m evaluation scan-score SET --out FILE [--run RUN.json]  # K12's gate
+    uv run python -m evaluation scan-score SET --out FILE [--run RUN.json]  # scan gate
     uv run --group ingest python -m evaluation pdf-candidates SET --seed N --count K
-    uv run --group ingest python -m evaluation pdf-score SET --out FILE  # K16 PDFs
+    uv run --group ingest python -m evaluation pdf-score SET --out FILE  # PDF gate
     uv run --group ingest python -m evaluation sheet-sample SET --seed N --count K
-    uv run python -m evaluation sheet-score SET --out FILE    # K16 spreadsheets
+    uv run python -m evaluation sheet-score SET --out FILE    # spreadsheet gate
     uv run python -m evaluation web-sample SET --seed N [--held-out-from SET]
-    uv run --group evaluation python -m evaluation web-render SET  # K16 web pages
+    uv run --group evaluation python -m evaluation web-render SET  # web page gate
     uv run python -m evaluation web-truth SET                 # outlines -> truth
     uv run python -m evaluation web-score SET --out FILE
     uv run --group ingest python -m evaluation picture-candidates SET --seed N --count K
-    uv run --group ingest python -m evaluation picture-score SET --out FILE  # X43 B2
+    uv run --group ingest python -m evaluation picture-score SET --out FILE  # pictures
     uv run --env-file .env python -m evaluation ask-keys SET --file KEY --out RUN
     uv run python -m evaluation reach SET --file KEY --run RUN --out FILE
     uv run --env-file .env python -m evaluation replay SET --file KEY --out FILE \
         [--history RUN] [--keep REPLAY] [--scoped] [--roles]  # no answers written
     uv run python -m evaluation grading-items SET --file KEY --run RUN --out FILE
     uv run python -m evaluation grade-counts SET --file KEY --grades G --run RUN --out F
-    uv run python -m evaluation claims-items --spec S --labels L --out FILE  # K28
+    uv run python -m evaluation claims-items --spec S --labels L --out FILE  # claims
 
 A set lives in git-ignored data/eval/<SET>/ and is registered by SHA-256 in
 evaluation/sets.json before it is used (`sets`).
@@ -51,7 +51,7 @@ from evaluation import (
     webpages,
 )
 
-# Runs whose answers stay unread until the release run (K29's breach, K31).
+# Runs whose answers stay unread until the release run, so nothing is tuned on them.
 SEALED_RUNS = ("nnpc-wording-check-v1", "heldout")
 
 
@@ -446,8 +446,8 @@ def run_replay(args: argparse.Namespace) -> int:
     by evidence reach (Lime Green E5). A conversation's turns read the history a run
     showed (`--history`); `--keep` reuses an earlier replay's search questions;
     `--scoped` rewrites again with the units the user's words name when the first
-    request dropped them, and searches again inside them (K23 B3); `--roles` adds
-    the statements of the roles asked about (K24)."""
+    request dropped them, and searches again inside them; `--roles` adds
+    the statements of the roles asked about."""
     if "heldout" in args.name and not args.release:
         raise ValueError(f"{args.name} is sealed until the release run (--release)")
     from petroknowledge import answer, assistant, config, fetch, llm
@@ -497,10 +497,10 @@ def run_replay(args: argparse.Namespace) -> int:
 
 
 def run_rescore(args: argparse.Namespace) -> int:
-    """A run's recorded replies checked again by today's post-generation checks
-    (K31): the judge's recorded verdicts (asking the live judge only for statements
+    """A run's recorded replies checked again by today's post-generation checks:
+    the judge's recorded verdicts (asking the live judge only for statements
     never judged), the live judge for every statement, or no judge, on every claim or
-    on figure claims only (`--grounding`, K32); the earlier-holder check with an index
+    on figure claims only (`--grounding`); the earlier-holder check with an index
     version's roles if given. Removals are applied, as served."""
     if any(name in str(args.run) for name in SEALED_RUNS) and not args.release:
         raise ValueError(f"{args.run} is sealed until the release run (--release)")
@@ -551,7 +551,7 @@ def run_second_sample(args: argparse.Namespace) -> int:
 
 
 def run_claims_items(args: argparse.Namespace) -> int:
-    """Write the claim benchmark (K28): every claim of the graded runs a spec lists,
+    """Write the claim benchmark: every claim of the graded runs a spec lists,
     labelled by its answer's verdict, or by the labels read for wrong answers."""
     graded = []
     for source in read_json(args.spec):
@@ -728,16 +728,16 @@ def parser() -> argparse.ArgumentParser:
         "--keep", type=Path, help="an earlier replay whose search questions are kept"
     )
     replayed.add_argument(
-        "--scoped", action="store_true", help="search again inside named units (K23)"
+        "--scoped", action="store_true", help="search again inside named units"
     )
     replayed.add_argument(
-        "--roles", action="store_true", help="add the asked roles' statements (K24)"
+        "--roles", action="store_true", help="add the asked roles' statements"
     )
     replayed.add_argument(
         "--release", action="store_true", help="unseal a held-out set"
     )
     rescored = commands.add_parser(
-        "rescore", help="a run's recorded replies checked again (K31)"
+        "rescore", help="a run's recorded replies checked again"
     )
     rescored.add_argument("--run", type=Path, required=True, help="the run file")
     rescored.add_argument("--out", type=Path, required=True)
@@ -746,7 +746,7 @@ def parser() -> argparse.ArgumentParser:
     )
     rescored.add_argument(
         "--grounding", choices=("remove", "figures"), default="remove",
-        help="the judge on every claim, or on figure claims only (K32)",
+        help="the judge on every claim, or on figure claims only",
     )  # fmt: skip
     rescored.add_argument(
         "--stale-version", type=int, help="earlier-holder check with these roles"
@@ -781,7 +781,7 @@ def parser() -> argparse.ArgumentParser:
     agreed.add_argument("--second", type=Path, required=True)
     agreed.add_argument("--out", type=Path, required=True)
     claimed = commands.add_parser(
-        "claims-items", help="the claims of graded runs, labelled (K28)"
+        "claims-items", help="the claims of graded runs, labelled"
     )
     claimed.add_argument("--spec", type=Path, required=True, help="the graded runs")
     claimed.add_argument(

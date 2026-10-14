@@ -12,7 +12,7 @@ import NoticeText from "./NoticeText.vue";
 // from its page, which it says), then where it is (page, dates) and which document. A link off the sources' hosts is shown as plain text;
 // every source link opens in a new tab, so the thread stays where it is.
 const props = defineProps<{ recorded: RecordedAnswer }>();
-// A refusal offers the How to ask guide as its next step (K33, Nielsen 9).
+// A refusal offers the How to ask guide as its next step (Nielsen's heuristic 9).
 const emit = defineEmits<{ guide: [] }>();
 
 const answer = computed(() => props.recorded.answer);
@@ -219,7 +219,7 @@ function anchor(number: number): string {
       </button>
       <span class="copied" aria-live="polite">{{ copied }}</span>
     </div>
-    <!-- With every answer, as the command line prints it (K02). -->
+    <!-- With every answer, as the command line prints it. -->
     <p class="answer-notice">
       Independent of NNPC Limited. Check the linked source before relying on an answer.
     </p>

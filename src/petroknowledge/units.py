@@ -1,21 +1,21 @@
-"""Business units (K23): the units a company's own units page lists and links, which
+"""Business units: the units a company's own units page lists and links, which
 of them a user's words name, and the passages in each unit's scope. They are the
-graph's first entities (K15).
+graph's first entities.
 
 A unit is a line of the units page's named section, as the page was read, that
 links to a page of its own: "NNPC Gas Marketing Limited (NGML)" with its link. They
 are read from the company's structure, never from a hand-written list. A text names
 a unit by its acronym or by its name without the legal form ("NNPC Gas Marketing"),
 as whole words, with case, spacing, punctuation and "&"/"and" folded, or by a former
-name its own page gives it ("NPDC" for NEPL, K29). A passage is
+name its own page gives it ("NPDC" for NEPL). A passage is
 in a unit's scope when its document is the unit's page, or when its title or its
 text names the unit.
 
 The units a question asks about come from the user's own words, never from the
-model's rewrite of them: in K22's runs, five of nine wrong answers began with a
-rewrite that changed or dropped the unit named.
+model's rewrite of them: in early evaluation runs, five of nine wrong answers
+began with a rewrite that changed or dropped the unit named.
 
-The units page's whole list is also compiled into one passage, by group (K27): read
+The units page's whole list is also compiled into one passage, by group: read
 as text, it was split across passages mid-group, so no passage held the list or tied
 a unit to its group (Lime Green X12). The passage is compiled, not copied: its
 heading says so, and a claim quoting it links to the page itself.
@@ -29,7 +29,7 @@ from urllib.parse import urljoin
 from bs4 import BeautifulSoup
 
 # name, acronym ("" for none), url, and any former names its own page gives it
-# ("aliases", "; " between them; K29 F2)
+# ("aliases", "; " between them)
 Unit = dict[str, str]
 Group = dict[str, Any]  # name, words (lines), entries (lines), as the page shows them
 LEGAL_FORMS = ("limited", "ltd", "gte", "plc", "company")
@@ -134,7 +134,7 @@ def compiled_text(section: str, groups: Sequence[Group]) -> str:
 def former_names(text: str, unit: Unit) -> list[str]:
     """The names a unit's own page says it formerly had, with their acronyms, from
     sentences that name the unit before saying so ("NNPC E&P Limited (NEPL),
-    formerly the Nigerian Petroleum Development Company (NPDC)"; K29 F2)."""
+    formerly the Nigerian Petroleum Development Company (NPDC)")."""
     named = naming([unit])
     found: list[str] = []
     for sentence in SENTENCE_END.split(text):

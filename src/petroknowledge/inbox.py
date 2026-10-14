@@ -9,7 +9,7 @@ A file is accepted only if its name matches a document the company's sources lis
 or a document or picture its stored pages link, so every added file has a known
 public origin.
 
-On the owner's instruction, `download_listed` fetches exactly the files a download
+On request, `download_listed` fetches exactly the files a download
 list names into the inbox, though their host's robots.txt asks crawlers to stay
 away. It identifies itself as the collector does, waits five seconds between files
 and crawls nothing. Its log (downloaded.json in the inbox folder) records each
@@ -32,7 +32,7 @@ from petroknowledge.sources import Company
 LOG = "downloaded.json"
 DOWNLOAD_DELAY_SECONDS = 5.0  # gentler than the crawler: these hosts ask bots away
 BY_HAND = "hand"
-BY_DOWNLOAD = "download on the owner's instruction (robots.txt disallows crawlers)"
+BY_DOWNLOAD = "listed download (robots.txt disallows crawlers)"
 
 
 def listed_urls(path: Path) -> list[str]:

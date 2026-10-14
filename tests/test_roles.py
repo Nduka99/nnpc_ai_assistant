@@ -1,5 +1,5 @@
 """Dated role statements: read from a passage, kept only when the passage holds their
-quote, grouped by role, and the latest decided by date (K24). Every passage, person
+quote, grouped by role, and the latest decided by date. Every passage, person
 and date here is invented."""
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""A benchmark of verified claims (K28): every claim the graded answers show, labelled
+"""A benchmark of verified claims: every claim the graded answers show, labelled
 correct or wrong, so a claim check can be scored offline, without asking the model
 again.
 

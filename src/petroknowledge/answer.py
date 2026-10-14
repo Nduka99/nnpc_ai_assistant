@@ -18,8 +18,8 @@ What the reader sees is decided by the application: an advice request gets fixed
 text, any other answer shows only claims that pass `verify`, and the caution appears
 whenever a part has no verified claim. Search-only matches (a scanned page's
 transcript, the words read in a picture) are not given to the answer request, which
-could not quote them; they are kept on the answer as pages the reader may open (K12,
-K16). Dates are the application's to show (`Passage.published`), so the model never
+could not quote them; they are kept on the answer as pages the reader may open.
+Dates are the application's to show (`Passage.published`), so the model never
 writes one its quotes do not hold. Retrieval and the model are passed in as
 functions, so this module does no I/O and the tests can replace both.
 """
@@ -42,15 +42,15 @@ from petroknowledge.records import (
 from petroknowledge.verify import states_figure, verify
 
 Retrieve = Callable[[str], list[Passage]]
-# The roles a question's words ask about (K24): the line telling the answer request
+# The roles a question's words ask about: the line telling the answer request
 # who holds them, and the passages of their statements, oldest first.
 RoleLookup = Callable[[str], tuple[str, list[Passage]]]
-# The company's current structure (K30 G3): (the user's words, the passages found) →
+# The company's current structure: (the user's words, the passages found) →
 # the compiled passage the answer request is pointed to, or none when the question
 # touches no structure.
 StructureLookup = Callable[[str, Sequence[Passage]], list[Passage]]
 # Why a claim names an earlier holder of a role it names, given the whole answer's
-# text (K30 G4); "" when it does not.
+# text; "" when it does not.
 StaleCheck = Callable[[str, str], str]
 # What a search adds after the company's passages: (query, its top places) → added.
 Extra = Callable[[str, Sequence[Passage]], list[Passage]]
@@ -65,7 +65,7 @@ INSUFFICIENT = (
 # Shown, with the parts listed, when a part of the question has no verified claim:
 # the reader sees exactly what is not answered (Lime Green E5 stage E).
 UNANSWERED_PARTS = "Nothing verified was found for these parts of the question:"
-# The next step for a missing part (K33): its pages, or the part asked on its own.
+# The next step for a missing part: its pages, or the part asked on its own.
 CHECK_THE_SOURCES = (
     "The pages listed below may say more; check them, or ask about that part on its "
     "own."
@@ -84,7 +84,7 @@ REFERRAL = (
     "- For a legal question, consult a qualified lawyer.\n"
     "- In a safety emergency, follow your site's emergency procedure and call 112, "
     "Nigeria's toll-free national emergency number.\n"
-    # A factual question that only mentions a decision may be referred too (K33): the
+    # A factual question that only mentions a decision may be referred too: the
     # reader is told how to get the fact.
     "If you only wanted what NNPC's documents say, ask for that fact on its own."
 )
@@ -197,7 +197,7 @@ separate claim for each saying what that source states.
 7. Never state a price per unit, such as per litre or per barrel.
 8. If the passages do not answer the question, return an empty claims list."""
 
-# The business units the user's words name (K23 B2), told to each request in its user
+# The business units the user's words name, told to each request in its user
 # message only when there are any: a question naming none gets byte-identical
 # requests.
 UNITS_TO_SEARCH = (
@@ -210,7 +210,7 @@ UNITS_TO_ANSWER = (
     "or the group as a whole, unless the part asks about that."
 )
 
-# Who holds the roles a question asks about (K24), decided by code from dated
+# Who holds the roles a question asks about, decided by code from dated
 # statements, told to the answer request only when a role is asked.
 ROLES_TO_ANSWER = (
     "Who holds the roles asked about, by the latest dated statement found (the dates "
@@ -218,10 +218,10 @@ ROLES_TO_ANSWER = (
     "A claim about who holds one of these roles now must name its latest holder."
 )
 
-# The company's current structure (K30 G3), from its own units page through the graph,
-# told to the answer request only when the question touches its structure; no dates,
-# as K24's line has none.
-# The structure is pointed to, not restated (K31): restated as one list, it came back
+# The company's current structure, from its own units page through the graph, told
+# to the answer request only when the question touches its structure; no dates, as
+# the roles line has none.
+# The structure is pointed to, not restated: restated as one list, it came back
 # as one packed claim the number check removed, and widened answers about a subset.
 STRUCTURE_TO_ANSWER = (
     "Passage {source} is the company's current business structure, compiled by code "
@@ -229,7 +229,7 @@ STRUCTURE_TO_ANSWER = (
     "of the company's businesses in the passages comes from an older or third-party "
     "source: give it only as what that source said."
 )
-# One re-draft when the checks leave a drafted part without a claim (K31): the checks'
+# One re-draft when the checks leave a drafted part without a claim: the checks'
 # own reasons go back to the model, and every new claim is checked again.
 REPAIR_REQUEST = (
     "Your earlier claims below were removed by the checks, for the reasons given:\n"
@@ -237,9 +237,9 @@ REPAIR_REQUEST = (
     "following every rule. Leave a part out if the passages do not support it."
 )
 
-# The grounding check (K28): each verified claim is judged against the whole passages
+# The grounding check: each verified claim is judged against the whole passages
 # it cites, one request per claim, by a judge of another family than the generator
-# (Nemotron 3 Nano 4B, owner's choice). Measured on claims-dev-v1 with exactly this
+# (Nemotron 3 Nano 4B). Measured on claims-dev-v1 with exactly this
 # prompt and schema: it removed 6 of 36 wrong claims and 17 of 408 correct ones (within
 # the 1 in 20 bar), at 0.4 s a claim; judged against the quotes alone, checks removed
 # far more correct claims.
@@ -279,9 +279,9 @@ def order_date(passage: Passage) -> str:
 def source_kind(passage: Passage, newest: str) -> tuple[str, str]:
     """What kind of source a passage comes from, whether it is the most recent of the
     company sources given (`newest`) or older, and its publication date if it has
-    one (K29 F1, K30 G5). Code compares the dates, so the model never has to guess
+    one. Code compares the dates, so the model never has to guess
     which source is current (CONFLICTS, arXiv 2506.08500); a file's or capture's date
-    is never shown, since a date given to the model is copied into claims (K24)."""
+    is never shown, since a date given to the model is copied into claims."""
     if passage.channel == "guidance":
         return "third party", passage.published
     kind = "company document" if passage.page is not None else "company page"
@@ -487,7 +487,7 @@ def understand_for(
     (`asked`) and no search question names any of them, the rewrite has dropped the
     unit: a second request, told the units (`UNITS_TO_SEARCH`), writes the search
     questions again. Whether the question asks for advice stays the first request's
-    decision, so the units can never turn a question into a referral (K23 B3)."""
+    decision, so the units can never turn a question into a referral."""
     advice, understood = understand(question, chat, history)
     if advice or not asked:
         return advice, understood
@@ -528,7 +528,7 @@ def gather(
 ) -> tuple[Passage, ...]:
     """The passages found for a question's parts. One part: its own search. Several:
     the parts together, then each alone, interleaved. Then each search again inside
-    the units the user's words name (`scoped`, K23), if given. Then what each search
+    the units the user's words name (`scoped`), if given. Then what each search
     adds after them (`extra`: pictures and guidance, Lime Green X44 F2). Then each
     item's own search (`with_items`, Lime Green X48)."""
     searches = list(parts) if len(parts) == 1 else [" ".join(parts), *parts]
@@ -636,7 +636,7 @@ def find_passages(
     dated: Sequence[Passage] = (),
 ) -> tuple[tuple[Passage, ...], tuple[Passage, ...]]:
     """The passages the answer request is given and the pages it points to, for the
-    first request's parts, then the asked roles' statement passages (`dated`, K24):
+    first request's parts, then the asked roles' statement passages (`dated`):
     one path for answers and for replays (evaluation)."""
     parts = [part.question for part in understood]
     found = gather(parts, retrieve, extra, items_to_search(understood), scoped)
@@ -662,9 +662,9 @@ def grounded(
     claims: Sequence[Claim], sources: Mapping[str, Passage], chat: Chat
 ) -> tuple[tuple[Claim, ...], tuple[Rejection, ...]]:
     """The claims their cited passages support, judged one by one, and the others as
-    removed (K28). A reply that is not a verdict of support removes the claim, unless
+    removed. A reply that is not a verdict of support removes the claim, unless
     the check only records its verdicts (`config.GROUNDING`, an evaluation run). With
-    "figures", only claims stating a figure are judged (K32): the judge catches a
+    "figures", only claims stating a figure are judged: the judge catches a
     substituted figure, but removed correct names, roles and dated statements for the
     source-recency wording code itself asks for."""
     kept: list[Claim] = []
@@ -688,7 +688,7 @@ def current(
     claims: Sequence[Claim], stale: StaleCheck
 ) -> tuple[tuple[Claim, ...], tuple[Rejection, ...]]:
     """The claims that name no earlier holder of a role in place of its latest one,
-    and the others as removed with the reason (K30 G4). An answer that names the
+    and the others as removed with the reason. An answer that names the
     latest holder elsewhere may name an earlier one as history."""
     whole = " ".join(claim.text for claim in claims)
     kept: list[Claim] = []
@@ -718,11 +718,11 @@ def answer(
     """Answer one question from the indexed information (`extra`, `scoped`: see
     `gather`). `history` is the conversation so far: only the first request reads
     it. `asked` are the units the user's words name (`understand_for`; the answer
-    request is told them too, K23 B3). `roles` looks up who holds the roles the
-    question's words ask about (K24). `judge` checks each verified claim (K28);
+    request is told them too). `roles` looks up who holds the roles the
+    question's words ask about. `judge` checks each verified claim;
     without one, `chat` does. `structure` gives the company's current structure when
     the question touches it, and `stale` removes claims naming an earlier holder of a
-    role (K30)."""
+    role."""
     advice, understood = understand_for(question, chat, history, asked)
     if advice:
         # Fixed text only: no retrieval, and nothing the model writes is shown.
@@ -752,7 +752,7 @@ def answer(
 
 
 def repair_parts(drafts: Sequence[DraftClaim], claims: Sequence[Claim]) -> list[int]:
-    """The parts a repair request re-drafts (K31): parts the model drafted a claim for
+    """The parts a repair request re-drafts: parts the model drafted a claim for
     and no claim survived the checks for. A part the model left out is never asked
     again, so a refusal of an absent fact stays a refusal."""
     answered = {claim.part for claim in claims}
@@ -788,7 +788,7 @@ def checked(
 ) -> Answer:
     """The answer the checks leave of a reply's drafts: verification (`verify`), the
     grounding check (`grounded`), then the earlier-holder check (`current`). The
-    answer path and offline rescoring (`evaluation rescore`, K31) share it, so a
+    answer path and offline rescoring (`evaluation rescore`) share it, so a
     change to a check can be measured on recorded replies."""
     sources = {f"S{number}": passage for number, passage in enumerate(given, 1)}
     claims, rejected = verify(drafts, sources)
